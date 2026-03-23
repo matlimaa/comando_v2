@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=0.8">
+<title>Menu Superior com Select</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Conteúdo com sidebar lateral -->
+    <div class="main">
+        
+        <!-- Sidebar lateral -->
+        <div class="sidebar">
+            <div class="topbar">
+                <h3>COMANDOS</h3>
+            </div>
+
+            <select id="provedor">
+                <option value="">Selecione OLT</option>
+                <option value="CALIX">CALIX</option>
+                <option value="DATACOM">DATACOM</option>
+                <option value="FURUKAWA">FURUKAWA</option>
+                <option value="HUAWEI">HUAWEI</option>
+                <option value="NOKIA">NOKIA</option>
+                <option value="PARKS">PARKS</option>
+                <option value="ZHONE">ZHONE</option>
+                <option value="ZTE">ZTE</option>
+                <option value="OUTROS">OUTROS</option>
+
+            </select>
+
+            <select id="rede">
+                <option value="">Selecione comando</option>
+            </select>
+
+            <div class="sidebar2">
+
+                <label for="slot1">Slot 1:</label>
+                <input type="text" id="slot1" placeholder="01">
+
+                <label for="slot2">Slot 2:</label>
+                <input type="text" id="slot2" placeholder="07">
+
+                <label for="onu">ONU:</label>
+                <input type="text" id="onu" placeholder="55">
+
+                <label for="serial">Serial:</label>
+                <input type="text" id="serial" placeholder="DACMECEC5C2EE">
+
+                <label for="service_port">Service Port:</label>
+                <input type="text" id="service_port" placeholder="Info_2">
+
+                <label for="vlan">VLAN:</label>
+                <input type="text" id="vlan" placeholder="Info_1">
+
+                <label for="desc">Descrição:</label>
+                <input type="text" id="desc" placeholder="FGA2210">
+            </div>
+
+        </div>
+
+        <!-- Conteúdo principal -->
+        <div class="content">
+            <h2 style="margin-top: 9px;">Comandos</h2>
+            <textarea id="conteudo"></textarea>
+        </div>
+
+    </div>
+
+<script src="script.js"></script>
+</body>
+</html>

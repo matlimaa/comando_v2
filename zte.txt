@@ -1,0 +1,56 @@
+Buscar ONU
+show gpon onu by sn ${serial}
+
+Verifica se pegou IP
+show gpon remote-onu wan-ip gpon_onu-1/${slot}:${onu}
+
+Verificar sinal da fibra
+show pon power attenuation gpon_onu-1/${slot}:${onu}
+
+Validar status da ONU
+show gpon onu detail-info gpon_onu-1/${slot}:${onu}
+
+Desprovisionadas 
+show pon onu uncfg
+
+Listar ONUs
+show gpon onu baseinfo gpon_olt-1/${slot}
+
+Listar Status da ONUs 
+show gpon onu state gpon_olt-1/${slot}
+
+
+DESPROVISIONAR
+
+configure terminal
+interface gpon_olt-1/${slot}
+no onu ${slot}
+exit
+
+
+PROVISONAMENTO ZTE
+
+
+configure terminal
+interface gpon_olt-1/${slot}
+no shutdown
+onu ${onu} type OTP-GPON sn ${serial}
+bind-onu ${onu} profile line LP-HSI_TV_PH_PPPoE_GPON		
+bind-onu ${onu} profile service SP-HSI_TV_PH_PPPoE_GPON		
+exit
+interface vport-1/${slot}.${onu}:1
+service-port 1 user-vlan 401 vlan 401 ingress vel_2000M_2000M_IN egress vel_2000M_2000M_OUT		
+exit
+pon-onu-mng gpon_onu-1/${slot}:${onu}
+mvlan tag eth_0/1 strip
+mvlan tag eth_0/2 strip
+mvlan tag eth_0/3 strip
+mvlan tag eth_0/4 strip
+wan-ip ipv4 mode pppoe username NOMEUSUARIO password SENHA vlan-profile VP-PPPoE host 1
+
+
+
+
+
+
+
