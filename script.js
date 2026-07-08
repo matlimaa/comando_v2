@@ -37,18 +37,18 @@ let opcaoAtiva = "";
 const opcoesRede = {
     "CALIX": ["813G", "844G-L3"],
     "DATACOM": ["DATACOM"],
-    "FURUKAWA": ["ZTE - NOKIA", "HUAWEI", "FURUKAWA (FIOG)", "FURUKAWA (FISA)"],
+    "FURUKAWA": ["ZTE - NOKIA", "HUAWEI ", "FURUKAWA (FIOG)", "FURUKAWA (FISA)"],
     "HUAWEI": ["HUAWEI", "Huawei IPoE"],
     "NOKIA": ["Zyxel", "Vantiva/Nokia", "Brigde"],
     "PARKS": ["PARKS"],
     "ZHONE": ["FGA2232", "FGA225C", "ZHONE"],
-    "ZTE": ["ZTE"],
+    "ZTE": ["ROUTER", "BRIGDE", "RAMAL"],
     "OUTROS": ["OUTROS"],
 
 };
 
 // Redes que devem exibir VLAN e Service Port
-const redesComCampos = ["DATACOM", "HUAWEI", "Huawei IPoE", "ZTE", "Brigde", "PARKS"];
+const redesComCampos = ["DATACOM", "HUAWEI", "Huawei IPoE", "Brigde", "BRIGDE", "PARKS"];
 
 // Atualiza visibilidade e placeholders dos campos
 function atualizarCampos() {
@@ -71,6 +71,7 @@ function atualizarCampos() {
 
     // Altera placeholders e labels conforme provedor
     switch (provedor) {
+
         case "DATACOM":
             labelVlan.textContent = "VLAN:";
             inputVlan.placeholder = "VLAN";
@@ -92,13 +93,6 @@ function atualizarCampos() {
             inputServicePort.placeholder = "VLAN";
             break;
 
-        case "ZTE":
-            labelVlan.textContent = "Password:";
-            inputVlan.placeholder = "Password";
-            labelServicePort.textContent = "Username:";
-            inputServicePort.placeholder = "Username";
-            break;
-
         case "PARKS":
             labelVlan.textContent = "Password:";
             inputVlan.placeholder = "Password";
@@ -111,6 +105,23 @@ function atualizarCampos() {
             inputVlan.placeholder = "VLAN";
             labelServicePort.textContent = "Service Port / Contrato:";
             inputServicePort.placeholder = "Service Port / Contrato";
+            break;
+    }
+
+    switch (redeSelecionada) {
+
+       case "BRIGDE":
+            labelVlan.textContent = "";
+            inputVlan.placeholder = "VLAN";
+            labelServicePort.textContent = "VLAN:";
+            inputServicePort.placeholder = "VLAN";
+            break;
+
+        case "ROUTER":
+            labelVlan.textContent = "VLAN:";
+            inputVlan.placeholder = "VLAN";
+            labelServicePort.textContent = "VLAN:";
+            inputServicePort.placeholder = "VLAN";
             break;
     }
 }
@@ -177,8 +188,8 @@ function mostrarInfo() {
   switch (provedor) {
             case "CALIX":
  
-  info = `
-####################### COMANDOS #######################
+  info = `####################### COMANDOS #######################
+
 Verificar ont não provisionada:
 show ont unassigned
  
@@ -213,7 +224,6 @@ set session tca-notif disabled alarm-notif disabled event-notif disabled pager d
 
 delete ont 59${slot1Formatado}${slot2Formatado}${onuFormatado} forced
 
-
 ####################### PROVISIONAMENTO #######################
 `;
 
@@ -235,23 +245,19 @@ add eth-svc Data1 to-ont-port 59${slot1Formatado}${slot2Formatado}${onuFormatado
 set ont-port 59${slot1Formatado}${slot2Formatado}${onuFormatado}/G1 eth-svc Data1 bw-profile 1000991000
 remove ont-port 59${slot1Formatado}${slot2Formatado}${onuFormatado}/g2 from-res-gw
 
-
 ####################### ATIVAÇÃO TELEFONIA #####################
 
 add eth-svc Data3 to-ont-port 59${slot1Formatado}${slot2Formatado}${onuFormatado}/g2 bw-profile PHONE-E1 svc-tag-action TA-V-298-L2 admin-state enabled
-
 
 ####################### ATIVAÇÃO TV  #######################
 
 add eth-svc Data2 to-ont-port 59${slot1Formatado}${slot2Formatado}${onuFormatado}/G1 bw-profile IPTV svc-tag-action TA-V-299 mcast-profile IPTV-MCast-Prof-1 admin-state enabled
 
-
 `;
                 break;
 
             case "DATACOM":
-                info = `
-##################### COMANDOS DATACOM #####################
+                info = `##################### COMANDOS DATACOM #####################
 
 ONUS DESPROVISIONADAS
 show interface gpon discovered-onus
@@ -296,14 +302,13 @@ no service-port ${onu}
 commit
 
 exit
-
 `;
                 break;
 
         case "FURUKAWA":
-  info = `
-enable
-show onu info
+info = `enable
+show onu info ${slot1}
+
 `;
 
     if (rede === "ZTE - NOKIA") {
@@ -336,9 +341,55 @@ onu-profile ${onu} op_${slot1}-${onu}
 end
 copy running-config startup-config
 
+####################### REFAZER PERFIL #######################
+
+conf t
+gpon
+gpon ${slot1}
+no onu ${onu}
+exit
+no onu-profile op_${slot1}-${onu}
+no traffic-profile tp_${slot1}-${onu}
+end
+conf t
+gpon
+gpon ${slot1}
+traffic-profile tp_${slot1}-${onu} create
+tcont 1
+gemport 1/1 queue 1
+dba-profile sr_M1000
+queue 1 weight 20
+tcont 2
+gemport 2/1
+dba-profile sr_k0512
+mapper 1
+gemport count 1
+dscp-to-pbit enable
+mapper 2
+gemport count 1
+bridge 1
+ani mapper 1
+vlan-filter vid 101 untagged discard
+ani mapper 2
+vlan-filter vid 201 untagged discard
+uni virtual-eth 1
+extended-vlan-tagging-operation evto1_hsi_voip_iptv
+apply
+!
+onu-profile op_${slot1}-${onu} create
+traffic-profile tp_${slot1}-${onu}
+apply
+!
+gpon-olt ${slot1}
+onu add ${onu} ${serial} auto-learning
+onu-profile ${onu} op_${slot1}-${onu}
+!
+end
+copy running-config startup-config
 `;
-    } else if (rede === "HUAWEI") {
+    } else if (rede === "HUAWEI ") {
         info += `####################### HUAWEI #######################
+
 conf t
 gpon
 gpon ${slot1}
@@ -382,19 +433,85 @@ onu-profile ${onu} op_${slot1}-${onu}
 end
 copy running-config startup-config
 
+####################### REFAZER PERFIL #######################
+
+conf t
+gpon
+gpon ${slot1}
+no onu ${onu}
+exit
+no onu-profile op_${slot1}-${onu}
+no traffic-profile tp_${slot1}-${onu}
+end
+conf t
+gpon
+gpon ${slot1}
+traffic-profile tp_${slot1}-${onu}
+tcont 1
+gemport 1/1 queue 1
+dba-profile sr_M1000
+queue 1 weight 20
+mapper 1
+gemport count 1
+dscp-to-pbit enable
+cos-mapping cos 2 gemport 1
+bridge 1
+ani mapper 1
+uni virtual-eth 1
+vlan-operation us-oper overwrite 101 2
+mac-filter ipx net-beui apple-talk pppoe
+tcont 2
+gemport 2/1 queue 1
+dba-profile sr_k0512
+queue 1 weight 50
+mapper 2
+gemport count 1
+dscp-to-pbit enable
+cos-mapping cos 5 gemport 1
+bridge 2
+ani mapper 2
+uni virtual-eth 2
+vlan-operation us-oper add 201 5
+mac-filter ipx net-beui apple-talk pppoe
+apply
+!
+onu-profile op_${slot1}-${onu} create
+traffic-profile tp_${slot1}-${onu}
+apply
+!
+gpon-olt ${slot1}
+onu add ${onu} ${serial} auto-learning
+onu-profile ${onu} op_${slot1}-${onu}
+!
+end
+copy running-config startup-config
 
 `;
     } else if (rede === "FURUKAWA (FIOG)") {
         info += `####################### INTERNET + VOZ FURUKAWA (FIOG) #######################
 
 
-
 `;
    } else if (rede === "FURUKAWA (FISA)") {
         info += `####################### INTERNET + VOZ FURUKAWA (FISA) #######################
+
+
+`;
+    }
+
+    // Bloco que sempre aparece (independente do perfil escolhido)
+    info += `####################### EXCLUIR #######################
+	
+conf t
+gpon
+gpon ${slot1}
+no onu ${onu}
+exit
+no onu-profile op_${slot1}-${onu}
+no traffic-profile tp_${slot1}-${onu}
+end
 `;
 
-    }
      break;
 
 
@@ -899,8 +1016,9 @@ Are you sure? [yes] or [no]:   yes
 
 
 
-            case "ZTE":
-                info = `
+        case "ZTE":
+                info = `####################### COMANDOS ZTE #######################
+
 Buscar ONU
 show gpon onu by sn ${serial}
 
@@ -922,8 +1040,10 @@ show gpon onu baseinfo gpon_olt-1/${slot}
 Listar Status da ONUs 
 show gpon onu state gpon_olt-1/${slot}
 
+`;
 
-####################### PROVISONAMENTO ZTE #######################
+    if (rede === "ROUTER") {
+        info += `####################### PROVISONAMENTO ZTE #######################
 
 enable
 senha: zxr10
@@ -945,6 +1065,31 @@ mvlan tag eth_0/3 strip
 mvlan tag eth_0/4 strip
 wan-ip ipv4 mode pppoe username ${service_port} password ${vlan} vlan-profile VP-PPPoE host 1
 
+####################### DESPROVISIONAR #######################
+
+enable
+configure terminal
+interface gpon_olt-1/${slot}
+no onu ${slot}
+exit
+`;
+    } else if (rede === "BRIGDE") {
+        info += `####################### PROVISONAMENTO ZTE #######################
+
+interface gpon_olt-1/${slot}
+onu ${onu} type BRIDGE sn ${serial} vport-mode gemport
+exit
+interface gpon_onu-1/${slot}:${onu}
+tcont 1 profile 1G
+gemport 1 tcont 1
+exit
+interface vport-1/${slot1}.${onu}:1
+service-port 1 user-vlan ${service_port} vlan ${service_port}
+exit
+pon-onu-mng gpon_onu-1/${slot}:${onu}
+service 1 gemport 1 vlan ${service_port}
+vlan port eth_0/1 mode tag vlan ${service_port}
+exit
 
 ####################### DESPROVISIONAR #######################
 
@@ -953,9 +1098,9 @@ configure terminal
 interface gpon_olt-1/${slot}
 no onu ${slot}
 exit
-
-
-####################### CONFIGURAR RAMAL #######################
+`;
+    } else if (rede === "RAMAL") {
+        info += `####################### CONFIGURAR RAMAL #######################
 
 configure terminal
 interface vport-1/1/${slot2}.${onu}:1
@@ -972,7 +1117,6 @@ show gpon remote-onu voip-linestatus gpon_onu-1/1/${slot2}:${onu}
 Confirmar se subiu IP na VLAN 298
 show gpon remote-onu voip-ip gpon_onu-1/1/${slot2}:${onu}
 
-
 ####################### CONFIGURAR CFTV #######################
 
 conf t
@@ -985,8 +1129,23 @@ interface vport-1/${slot}.${onu}:1
 service-port 1 user-vlan 501 vlan 501
 exit
 
+####################### REMOVER VOIP #######################
+
+configure terminal
+pon-onu-mng gpon_onu-1/${slot}:${onu}
+no sip-service pots_0/1
 `;
-         break;
+
+    }
+
+
+                break;
+
+
+
+
+
+
 
      
             case "OUTROS":
