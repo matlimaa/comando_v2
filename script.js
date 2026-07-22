@@ -40,7 +40,7 @@ const opcoesRede = {
     "FURUKAWA": ["ZTE - NOKIA", "HUAWEI ", "FURUKAWA (FIOG)", "FURUKAWA (FISA)"],
     "HUAWEI": ["HUAWEI", "Huawei IPoE"],
     "NOKIA": ["Zyxel", "Vantiva/Nokia", "Brigde"],
-    "PARKS": ["PARKS"],
+    "PARKS": ["ROUTER_prks", "CFTV_prks"],
     "ZHONE": ["FGA2232", "FGA225C", "ZHONE"],
     "ZTE": ["ROUTER", "BRIGDE", "RAMAL"],
     "OUTROS": ["OUTROS"],
@@ -524,8 +524,8 @@ end
 
 
             case "HUAWEI":
-                info = `
-####################### COMANDOS HUAWEI #######################
+                info = 
+`####################### COMANDOS HUAWEI #######################
 
 Consultar service port
 display service-port port 0/${slot} ont ${onu}
@@ -552,28 +552,24 @@ display ont info summary 0/${slot}
 `;
 
     if (rede === "HUAWEI") {
-        info += `
-####################### PROVISIONAMENTO Brigde #######################
+        info += 
+`####################### PROVISIONAMENTO Brigde #######################
 
 enable
 
 config
 
 interface gpon 0/${slot1}
-
-ont add ${slot2} ${onu} sn-auth ${serial} omci ont-lineprofile-id ${service_port} ont-srvprofile-id ${service_port} desc ${serial}
-
-ont port native-vlan ${slot2} ${onu} eth 1 vlan ${service_port} priority 0
-quit
-
+ont add ${slot2} ${onu} sn-auth ${serial} omci ont-lineprofile-id 1010 ont-srvprofile-id 1010
 
 display service-port next-free-index
- 
-service-port ${vlan} vlan ${service_port} gpon 0/${slot1}/${slot2} ont ${onu} gemport ${service_port} multi-service user-vlan ${service_port} tag-transform translate
+
+service-port ${vlan} vlan ${service_port} gpon 0/${slot1}/${slot2} ont ${onu} gemport 1 multi-service user-vlan 11 tag-transform translate inbound traffic-table index 50 outbound traffic-table index 50
+save
 `;
     } else if (rede === "Huawei IPoE") {
-        info += `
-####################### PROVISIONAMENTO IPoE #######################
+        info += 
+`####################### PROVISIONAMENTO IPoE #######################
 
 config
 interface gpon 0/${slot1} 
@@ -595,22 +591,15 @@ service-port ${service_port} vlan 301 gpon 0/${slot} ont ${onu} gemport 1 multi-
     }
 
     // Bloco que sempre aparece (independente do perfil escolhido)
-    info += `
-
-####################### DESPROVISIONAR #######################
+    info += 
+`####################### DESPROVISIONAR #######################
 
 enable  
-
 config 
-
 undo service-port port 0/${slot} ont ${onu}
-
 interface gpon 0/${slot1}
-
 ont delete ${slot2} ${onu}
-
 quit
-
 
 `;
                 break;
@@ -648,22 +637,17 @@ show dhcp-relay session vlanport:1/1/${slot}/${onu}/vuni:298
 info configure voice ont voice-sip-port 1/1/${slot}/${onu}/6/1
 show voice ont pots operational-data 1/1/${slot}/${onu}/6/1
 
-
 ####################### PROVISIONAMENTO Zyxel #######################
 
 configure equipment ont interface 1/1/${slot}/${onu} sernum ${serial} subslocid WILDCARD fec-up disable sw-dnload-version disabled sw-ver-pland disabled voip-allowed iphost iphc-allowed enable
 
-
 ###################### DESPROVISIONAMENTO #######################
-
 
 configure equipment ont interface 1/1/${slot}/${onu} admin-state down
 configure equipment ont no interface 1/1/${slot}/${onu}
 
-
 ####################### ATIVAÇÃO TV #######################
 	  ⚠️⚠️⚠️ ENVIAR LINHA POR LINHA ⚠️⚠️⚠️ 
-
 
 configure qos interface 1/1/${slot}/${onu}/${equip}/1 upstream-queue 3 bandwidth-profile name:vel_100M_1M_UP
 
@@ -672,7 +656,6 @@ configure qos interface ont:1/1/${slot}/${onu} queue 3 shaper-profile name:vel_1
 configure bridge port 1/1/${slot}/${onu}/${equip}/1 vlan-id 299 tag single-tagged
 
 configure igmp channel vlan:1/1/${slot}/${onu}/${equip}/1:299 max-num-group 10
-
 
 ##################### ATIVAÇÃO TELEFONIA #####################
   ⚠️⚠️⚠️ CASO ERRO, TENTAR ENVIAR LINHA POR LINHA ⚠️⚠️⚠️ 
@@ -723,22 +706,17 @@ show dhcp-relay session vlanport:1/1/${slot}/${onu}/vuni:298
 info configure voice ont voice-sip-port 1/1/${slot}/${onu}/6/1
 show voice ont pots operational-data 1/1/${slot}/${onu}/6/1
 
-
 ####################### PROVISIONAMENTO Vantiva/Nokia #######################
 
 configure equipment ont interface 1/1/${slot}/${onu} sernum ${serial} subslocid WILDCARD fec-up disable sw-dnload-version auto sw-ver-pland auto voip-allowed iphost pland-cfgfile1 auto pland-cfgfile2 auto dnload-cfgfile1 auto dnload-cfgfile2 auto desc1 "${desc}"
 
-
 ###################### DESPROVISIONAMENTO #######################
-
 
 configure equipment ont interface 1/1/${slot}/${onu} admin-state down
 configure equipment ont no interface 1/1/${slot}/${onu}
 
-
 ####################### ATIVAÇÃO TV #######################
 	  ⚠️⚠️⚠️ ENVIAR LINHA POR LINHA ⚠️⚠️⚠️ 
-
 
 configure qos interface 1/1/${slot}/${onu}/${equip}/1 upstream-queue 3 bandwidth-profile name:vel_100M_1M_UP
 
@@ -747,7 +725,6 @@ configure qos interface ont:1/1/${slot}/${onu} queue 3 shaper-profile name:vel_1
 configure bridge port 1/1/${slot}/${onu}/${equip}/1 vlan-id 299 tag single-tagged
 
 configure igmp channel vlan:1/1/${slot}/${onu}/${equip}/1:299 max-num-group 10
-
 
 ##################### ATIVAÇÃO TELEFONIA #####################
   ⚠️⚠️⚠️ CASO ERRO, TENTAR ENVIAR LINHA POR LINHA ⚠️⚠️⚠️ 
@@ -767,10 +744,6 @@ configure voice ont voice-port 1/1/${slot}/${onu}/2/1 admin-state locked
 configure voice ont voice-port 1/1/${slot}/${onu}/2/1 custinfo POTS1 voipconfig sip pots-pwr-timer 300 rx-gain 1.000000 tx-gain 2.000000 impedance 600 voip-media-prof 1
 configure voice ont voice-sip-port 1/1/${slot}/${onu}/2/1 user-aor ${numero} display-name ${numero} user-name ${numero} password plain:${pin} voice-mail-prof 2 ntwk-dp-prof 1 app-serv-prof 1 ac-code-prof 1
 configure voice ont voice-port 1/1/${slot}/${onu}/2/1 admin-state unlocked
-
-
-
-
 `;
     } else if (rede === "Brigde") {
         info += `
@@ -785,8 +758,6 @@ show vlan bridge-port-fdb 1/1/${slot}/${onu}/${equip}/1
 show dhcp-relay session vlanport:1/1/${slot}/${onu}/${equip}/1:301
 
 show equipment ont status pon 1/1/${slot} ont 1/1/${slot}/${onu}
-
-
 
 #################### PROVISIONAR #####################
 
@@ -814,9 +785,6 @@ exit all
 
 configure equipment ont interface 1/1/${slot}/${onu} admin-state down
 configure equipment ont no interface 1/1/${slot}/${onu}
-
-
-
 `;
     }
                 break;
@@ -837,9 +805,11 @@ show interface gpon${slot} onu status
 
 VERIFICAR ATENUAÇÃO PELO SERIAL
 show gpon onu ${serial} status
+`;
 
-
-####################### PROVISIONAMENTO #######################
+if (rede === "ROUTER_prks") {
+        info += 
+`####################### PROVISIONAMENTO #######################
 
 configure terminal
 interface gpon${slot}
@@ -851,15 +821,32 @@ onu ${serial} tr069-profile tr069
 onu ${serial} tr069-admin-state unlock
 
 do copy running-config startup-config
+`;}
 
-####################### DESPROVISIONAMENTO #######################
+else if (rede === "CFTV_prks") {
+        info += 
+`####################### PROVISIONAMENTO #######################
+
+conf t
+interface gpon${slot}
+onu add serial-number ${serial}
+onu ${serial} flow-profile cftv_501
+onu ${serial} vlan-translation-profile vt_501 uni-port 1,2,3,4
+do copy running-config startup-config
+end
+`;
+}
+
+ info += 
+`####################### DESPROVISIONAMENTO #######################
 
 conf t
 interface gpon${slot}
 no onu ${serial}
 end
 `;
-     break;
+
+break;
 
 
 
