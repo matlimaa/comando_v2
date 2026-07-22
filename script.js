@@ -1094,6 +1094,10 @@ show gpon onu state gpon_olt-1/${slot}
 
 ####################### PROVISONAMENTO ZTE #######################
 
+enable
+senha: zxr10
+
+configure terminal
 interface gpon_olt-1/${slot}
 onu ${onu} type BRIDGE sn ${serial} vport-mode gemport
 exit
@@ -1136,7 +1140,6 @@ pon-onu-mng gpon_onu-1/1/${slot2}:${onu}
 sip-service pots_0/1 profile VP-SIP01 userid ${service_port} username ${service_port} password ${vlan} media-profile VP-MEDIA01
 exit
 
-
 ####################### CONFIGURAR CFTV #######################
 
 conf t
@@ -1157,8 +1160,6 @@ no sip-service pots_0/1
 `;
 
     }
-
-
                 break;
 
             case "OUTROS":
