@@ -1051,7 +1051,7 @@ show gpon onu baseinfo gpon_olt-1/${slot}
 Listar Status da ONUs 
 show gpon onu state gpon_olt-1/${slot}
 
-		####################### PROVISONAMENTO ZTE #######################
+####################### PROVISONAMENTO ZTE #######################
 
 enable
 senha: zxr10
@@ -1161,13 +1161,6 @@ no sip-service pots_0/1
 
                 break;
 
-
-
-
-
-
-
-     
             case "OUTROS":
                 info = `
 ####################### COMANDOS #######################
