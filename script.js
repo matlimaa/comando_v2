@@ -1038,7 +1038,11 @@ show pon power attenuation gpon_onu-1/${slot}:${onu}
 Validar status da ONU
 show gpon onu detail-info gpon_onu-1/${slot}:${onu}
 
-Desprovisionadas 
+`;
+
+    if (rede === "ROUTER") {
+        info += 
+`Desprovisionadas 
 show pon onu uncfg
 
 Listar ONUs
@@ -1047,10 +1051,7 @@ show gpon onu baseinfo gpon_olt-1/${slot}
 Listar Status da ONUs 
 show gpon onu state gpon_olt-1/${slot}
 
-`;
-
-    if (rede === "ROUTER") {
-        info += `####################### PROVISONAMENTO ZTE #######################
+		####################### PROVISONAMENTO ZTE #######################
 
 enable
 senha: zxr10
@@ -1081,7 +1082,17 @@ no onu ${onu}
 exit
 `;
     } else if (rede === "BRIGDE") {
-        info += `####################### PROVISONAMENTO ZTE #######################
+        info += 
+`Desprovisionadas 
+show pon onu uncfg
+
+Listar ONUs
+show gpon onu baseinfo gpon_olt-1/${slot}
+
+Listar Status da ONUs 
+show gpon onu state gpon_olt-1/${slot}
+
+####################### PROVISONAMENTO ZTE #######################
 
 interface gpon_olt-1/${slot}
 onu ${onu} type BRIDGE sn ${serial} vport-mode gemport
@@ -1107,7 +1118,14 @@ no onu ${onu}
 exit
 `;
     } else if (rede === "RAMAL") {
-        info += `####################### CONFIGURAR RAMAL #######################
+        info += 
+`Confirmar se registrou o ramal
+show gpon remote-onu voip-linestatus gpon_onu-1/1/${slot2}:${onu}
+
+Confirmar se subiu IP na VLAN 298
+show gpon remote-onu voip-ip gpon_onu-1/1/${slot2}:${onu}
+
+####################### CONFIGURAR RAMAL #######################
 
 configure terminal
 interface vport-1/1/${slot2}.${onu}:1
@@ -1118,11 +1136,6 @@ pon-onu-mng gpon_onu-1/1/${slot2}:${onu}
 sip-service pots_0/1 profile VP-SIP01 userid ${service_port} username ${service_port} password ${vlan} media-profile VP-MEDIA01
 exit
 
-Confirmar se registrou o ramal
-show gpon remote-onu voip-linestatus gpon_onu-1/1/${slot2}:${onu}
-
-Confirmar se subiu IP na VLAN 298
-show gpon remote-onu voip-ip gpon_onu-1/1/${slot2}:${onu}
 
 ####################### CONFIGURAR CFTV #######################
 
