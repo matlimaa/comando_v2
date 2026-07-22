@@ -48,7 +48,7 @@ const opcoesRede = {
 };
 
 // Redes que devem exibir VLAN e Service Port
-const redesComCampos = ["DATACOM", "HUAWEI", "Huawei IPoE", "Brigde", "BRIGDE", "PARKS"];
+const redesComCampos = ["DATACOM", "HUAWEI", "Huawei IPoE", "Brigde", "BRIGDE", "PARKS", "RAMAL"];
 
 // Atualiza visibilidade e placeholders dos campos
 function atualizarCampos() {
@@ -122,6 +122,13 @@ function atualizarCampos() {
             inputVlan.placeholder = "VLAN";
             labelServicePort.textContent = "VLAN:";
             inputServicePort.placeholder = "VLAN";
+            break;
+
+        case "RAMAL":
+            labelVlan.textContent = "USERNAME:";
+            inputVlan.placeholder = "USERNAME";
+            labelServicePort.textContent = "PASSWORD:";
+            inputServicePort.placeholder = "PASSWORD";
             break;
     }
 }
@@ -1055,7 +1062,7 @@ onu ${onu} type OTP-GPON sn ${serial}
 bind-onu ${onu} profile line LP-HSI_TV_PH_PPPoE_GPON
 bind-onu ${onu} profile service SP-HSI_TV_PH_PPPoE_GPON	
 exit
-interface vport-1/${slot1}.${onu}:1
+interface vport-1/${slot}.${onu}:1
 service-port 1 user-vlan 401 vlan 401 ingress vel_2000M_2000M_IN egress vel_2000M_2000M_OUT
 exit
 pon-onu-mng gpon_onu-1/${slot1}:${onu}
@@ -1070,7 +1077,7 @@ wan-ip ipv4 mode pppoe username ${service_port} password ${vlan} vlan-profile VP
 enable
 configure terminal
 interface gpon_olt-1/${slot}
-no onu ${slot}
+no onu ${onu}
 exit
 `;
     } else if (rede === "BRIGDE") {
@@ -1083,7 +1090,7 @@ interface gpon_onu-1/${slot}:${onu}
 tcont 1 profile 1G
 gemport 1 tcont 1
 exit
-interface vport-1/${slot1}.${onu}:1
+interface vport-1/${slot}.${onu}:1
 service-port 1 user-vlan ${service_port} vlan ${service_port}
 exit
 pon-onu-mng gpon_onu-1/${slot}:${onu}
@@ -1096,7 +1103,7 @@ exit
 enable
 configure terminal
 interface gpon_olt-1/${slot}
-no onu ${slot}
+no onu ${onu}
 exit
 `;
     } else if (rede === "RAMAL") {
