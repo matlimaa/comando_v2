@@ -38,9 +38,9 @@ const opcoesRede = {
     "CALIX": ["813G", "844G-L3"],
     "DATACOM": ["DATACOM"],
     "FURUKAWA": ["ZTE - NOKIA", "HUAWEI ", "FURUKAWA (FIOG)", "FURUKAWA (FISA)"],
-    "HUAWEI": ["HUAWEI", "Huawei IPoE"],
-    "NOKIA": ["Zyxel", "Vantiva/Nokia", "Brigde"],
-    "PARKS": ["ROUTER_prks", "CFTV_prks"],
+    "HUAWEI": ["HUAWEI_BRIDGE", "HUAWEI_ROUTER"],
+    "NOKIA": ["ZYXEL", "VANTIVA/NOKIA", "ZHONE_N", "BRIDGE_N" ],
+    "PARKS": ["ROUTER_prks_azza", "ROUTER_prks_moc", "BRIDGE_prks_moc", "CFTV_prks"],
     "ZHONE": ["FGA2232", "FGA225C", "ZHONE"],
     "ZTE": ["ROUTER", "BRIGDE", "RAMAL"],
     "OUTROS": ["OUTROS"],
@@ -48,7 +48,7 @@ const opcoesRede = {
 };
 
 // Redes que devem exibir VLAN e Service Port
-const redesComCampos = ["DATACOM", "HUAWEI", "Huawei IPoE", "Brigde", "BRIGDE", "PARKS", "RAMAL"];
+const redesComCampos = ["DATACOM", "HUAWEI_BRIDGE", "HUAWEI_ROUTER", "Brigde", "BRIGDE", "PARKS", "RAMAL", "ROUTER_prks_azza"];
 
 // Atualiza visibilidade e placeholders dos campos
 function atualizarCampos() {
@@ -125,6 +125,13 @@ function atualizarCampos() {
             break;
 
         case "RAMAL":
+            labelVlan.textContent = "USERNAME:";
+            inputVlan.placeholder = "USERNAME";
+            labelServicePort.textContent = "PASSWORD:";
+            inputServicePort.placeholder = "PASSWORD";
+            break;
+
+        case "ROUTER_prks_azza":
             labelVlan.textContent = "USERNAME:";
             inputVlan.placeholder = "USERNAME";
             labelServicePort.textContent = "PASSWORD:";
@@ -542,6 +549,18 @@ display ont info by-sn ${serial}
 Log
 display ont info summary 0/${slot}
 
+---------------------
+
+Verificar as line-profiles:
+display ont-lineprofile gpon all
+
+Verificar as srv-profiles:
+display ont-srvprofile gpon all
+
+Verificar o gemport id de um profile: (Informação consta na linha "Gem Index")
+display ont-lineprofile gpon profile-id {id_do_lineprofile}
+
+
 --------------------------------------------------------------------------
 
 	display ont info by-sn 485754434C098DAA 								
@@ -551,7 +570,7 @@ display ont info summary 0/${slot}
 --------------------------------------------------------------------------
 `;
 
-    if (rede === "HUAWEI") {
+    if (rede === "HUAWEI_BRIDGE") {
         info += 
 `####################### PROVISIONAMENTO Brigde #######################
 
@@ -567,9 +586,9 @@ display service-port next-free-index
 service-port ${vlan} vlan ${service_port} gpon 0/${slot1}/${slot2} ont ${onu} gemport 1 multi-service user-vlan 11 tag-transform translate inbound traffic-table index 50 outbound traffic-table index 50
 save
 `;
-    } else if (rede === "Huawei IPoE") {
+    } else if (rede === "HUAWEI_ROUTER") {
         info += 
-`####################### PROVISIONAMENTO IPoE #######################
+`####################### PROVISIONAMENTO #######################
 
 config
 interface gpon 0/${slot1} 
@@ -608,39 +627,56 @@ quit
             case "NOKIA":
 
 
-    if (rede === "Zyxel") {
-        info += `
-####################### COMANDOS OLT NOKIA #######################
+    if (rede === "ZYXEL") {
+        info += 
+`####################### COMANDOS #######################
 
+CONSULTAR EQUIPAMENTO
 show equipment ont index sn:${serial}
 
+DESCOBRIR ONTS DESPROVISIONADAS
+show pon unprovision-onu
+
+LISTAR CARD PON
 show equipment ont status pon 1/1/${slot}
 
-admin equipment ont interface 1/1/${slot}/${onu} reboot with-active-image
---------------------
-
+CONSULTAR SINAL DA FIBRA
 show equipment ont optics 1/1/${slot}/${onu}
 
-show vlan bridge-port-fdb 1/1/${slot}/${onu}/${equip}/1
-
+VERIFICAR SE PEGOU IP
 show dhcp-relay session vlanport:1/1/${slot}/${onu}/${equip}/1:301
 show dhcp-relay session vlanport:1/1/${slot}/${onu}/${equip}/1:299
 
+CONSULTAR SE PEGOU MAC
+show vlan bridge-port-fdb 1/1/${slot}/${onu}/${equip}/1
+
+CONSULTAR DETALHES DA ONT
 show equipment ont status pon 1/1/${slot} ont 1/1/${slot}/${onu}
 
+VERIFICAR SE ONT RECEBEU FIRWMARE
 show equipment ont cfg-download 1/1/${slot}/${onu}
 
---------------------
-Comandos telefonia
+REINICIAR A ONT
+admin equipment ont interface 1/1/${slot}/${onu} reboot with-active-image
 
-show dhcp-relay session vlanport:1/1/${slot}/${onu}/vuni:298
-info configure voice ont voice-sip-port 1/1/${slot}/${onu}/6/1
-show voice ont pots operational-data 1/1/${slot}/${onu}/6/1
+VERIFICANDO OS PROFILES APLICADOS NA ONT
+info configure qos interface 1/1/{slot}/{onu}/1/1
+info configure qos interface 1/1/{slot}/{onu}/14/1
 
 ####################### PROVISIONAMENTO Zyxel #######################
 
 configure equipment ont interface 1/1/${slot}/${onu} sernum ${serial} subslocid WILDCARD fec-up disable sw-dnload-version disabled sw-ver-pland disabled voip-allowed iphost iphc-allowed enable
 
+
+configure equipment ont interface 1/1/${slot}/${onu} admin-state up
+configure qos interface ont:1/1/${slot}/${onu} ds-queue-sharing
+configure equipment ont slot 1/1/${slot}/${onu}/3 plndnumdataports 1 plndnumvoiceports 0 planned-card-type veip admin-state up
+configure qos interface 1/1/${slot}/${onu}/3/1 upstream-queue 0 bandwidth-profile name:vel_1000M_1000M_IN
+configure qos interface ont:1/1/${slot}/${onu} queue 0 shaper-profile name:vel_1000M_1000M_OUT
+configure bridge port 1/1/${slot}/${onu}/3/1 max-unicast-mac 3
+configure bridge port 1/1/${slot}/${onu}/3/1 vlan-id 301 tag single-tagged
+configure interface port uni:1/1/${slot}/${onu}/3/1 admin-up
+
 ###################### DESPROVISIONAMENTO #######################
 
 configure equipment ont interface 1/1/${slot}/${onu} admin-state down
@@ -656,6 +692,17 @@ configure qos interface ont:1/1/${slot}/${onu} queue 3 shaper-profile name:vel_1
 configure bridge port 1/1/${slot}/${onu}/${equip}/1 vlan-id 299 tag single-tagged
 
 configure igmp channel vlan:1/1/${slot}/${onu}/${equip}/1:299 max-num-group 10
+
+####################### COMANDOS TELEFONIA #######################
+
+VERIFICAR SE PEGOU IP
+show dhcp-relay session vlanport:1/1/${slot}/${onu}/vuni:298
+
+VER DADOS DO SERVIDOR SIP
+info configure voice ont voice-sip-port 1/1/${slot}/${onu}/6/1
+
+VER ESTADO FÍSICO DA LINHA
+show voice ont pots operational-data 1/1/${slot}/${onu}/6/1
 
 ##################### ATIVAÇÃO TELEFONIA #####################
   ⚠️⚠️⚠️ CASO ERRO, TENTAR ENVIAR LINHA POR LINHA ⚠️⚠️⚠️ 
@@ -677,39 +724,55 @@ configure voice ont voice-sip-port 1/1/${slot}/${onu}/2/1 user-aor ${numero} dis
 configure voice ont voice-port 1/1/${slot}/${onu}/2/1 admin-state unlocked
 
 `;
-    } else if (rede === "Vantiva/Nokia") {
-        info += `
-####################### COMANDOS OLT NOKIA #######################
+    } else if (rede === "VANTIVA/NOKIA") {
+        info +=
+`####################### COMANDOS #######################
 
+CONSULTAR EQUIPAMENTO
 show equipment ont index sn:${serial}
 
+DESCOBRIR ONTS DESPROVISIONADAS
+show pon unprovision-onu
+
+LISTAR CARD PON
 show equipment ont status pon 1/1/${slot}
 
-admin equipment ont interface 1/1/${slot}/${onu} reboot with-active-image
---------------------
-
+CONSULTAR SINAL DA FIBRA
 show equipment ont optics 1/1/${slot}/${onu}
 
-show vlan bridge-port-fdb 1/1/${slot}/${onu}/${equip}/1
-
+VERIFICAR SE PEGOU IP
 show dhcp-relay session vlanport:1/1/${slot}/${onu}/${equip}/1:301
 show dhcp-relay session vlanport:1/1/${slot}/${onu}/${equip}/1:299
 
+CONSULTAR SE PEGOU MAC
+show vlan bridge-port-fdb 1/1/${slot}/${onu}/${equip}/1
+
+CONSULTAR DETALHES DA ONT
 show equipment ont status pon 1/1/${slot} ont 1/1/${slot}/${onu}
 
+VERIFICAR SE ONT RECEBEU FIRWMARE
 show equipment ont cfg-download 1/1/${slot}/${onu}
 
---------------------
-Comandos telefonia
+REINICIAR A ONT
+admin equipment ont interface 1/1/${slot}/${onu} reboot with-active-image
 
-show dhcp-relay session vlanport:1/1/${slot}/${onu}/vuni:298
-info configure voice ont voice-sip-port 1/1/${slot}/${onu}/6/1
-show voice ont pots operational-data 1/1/${slot}/${onu}/6/1
+VERIFICANDO OS PROFILES APLICADOS NA ONT
+info configure qos interface 1/1/{slot}/{onu}/1/1
+info configure qos interface 1/1/{slot}/{onu}/14/1
 
 ####################### PROVISIONAMENTO Vantiva/Nokia #######################
 
 configure equipment ont interface 1/1/${slot}/${onu} sernum ${serial} subslocid WILDCARD fec-up disable sw-dnload-version auto sw-ver-pland auto voip-allowed iphost pland-cfgfile1 auto pland-cfgfile2 auto dnload-cfgfile1 auto dnload-cfgfile2 auto desc1 "${desc}"
 
+configure equipment ont interface 1/1/${slot}/${onu} admin-state up
+configure qos interface ont:1/1/${slot}/${onu} ds-queue-sharing
+configure equipment ont slot 1/1/${slot}/${onu}/3 plndnumdataports 1 plndnumvoiceports 0 planned-card-type veip admin-state up
+configure qos interface 1/1/${slot}/${onu}/3/1 upstream-queue 0 bandwidth-profile name:vel_1000M_1000M_IN
+configure qos interface ont:1/1/${slot}/${onu} queue 0 shaper-profile name:vel_1000M_1000M_OUT
+configure bridge port 1/1/${slot}/${onu}/3/1 max-unicast-mac 3
+configure bridge port 1/1/${slot}/${onu}/3/1 vlan-id 301 tag single-tagged
+configure interface port uni:1/1/${slot}/${onu}/3/1 admin-up
+
 ###################### DESPROVISIONAMENTO #######################
 
 configure equipment ont interface 1/1/${slot}/${onu} admin-state down
@@ -726,7 +789,19 @@ configure bridge port 1/1/${slot}/${onu}/${equip}/1 vlan-id 299 tag single-tagge
 
 configure igmp channel vlan:1/1/${slot}/${onu}/${equip}/1:299 max-num-group 10
 
+####################### COMANDOS TELEFONIA #######################
+
+VERIFICAR SE PEGOU IP
+show dhcp-relay session vlanport:1/1/${slot}/${onu}/vuni:298
+
+VER DADOS DO SERVIDOR SIP
+info configure voice ont voice-sip-port 1/1/${slot}/${onu}/6/1
+
+VER ESTADO FÍSICO DA LINHA
+show voice ont pots operational-data 1/1/${slot}/${onu}/6/1
+
 ##################### ATIVAÇÃO TELEFONIA #####################
+
   ⚠️⚠️⚠️ CASO ERRO, TENTAR ENVIAR LINHA POR LINHA ⚠️⚠️⚠️ 
 
 configure qos interface 1/1/${slot}/${onu}/voip upstream-queue 2 bandwidth-profile name:vel_1M_1M_IN
@@ -745,19 +820,40 @@ configure voice ont voice-port 1/1/${slot}/${onu}/2/1 custinfo POTS1 voipconfig 
 configure voice ont voice-sip-port 1/1/${slot}/${onu}/2/1 user-aor ${numero} display-name ${numero} user-name ${numero} password plain:${pin} voice-mail-prof 2 ntwk-dp-prof 1 app-serv-prof 1 ac-code-prof 1
 configure voice ont voice-port 1/1/${slot}/${onu}/2/1 admin-state unlocked
 `;
-    } else if (rede === "Brigde") {
-        info += `
+    } else if (rede === "BRIDGE_N") {
+        info += 
+`####################### COMANDOS #######################
+
+CONSULTAR EQUIPAMENTO
 show equipment ont index sn:${serial}
 
+DESCOBRIR ONTS DESPROVISIONADAS
+show pon unprovision-onu
+
+LISTAR CARD PON
 show equipment ont status pon 1/1/${slot}
 
+CONSULTAR SINAL DA FIBRA
 show equipment ont optics 1/1/${slot}/${onu}
 
-show vlan bridge-port-fdb 1/1/${slot}/${onu}/${equip}/1
-
+VERIFICAR SE PEGOU IP
 show dhcp-relay session vlanport:1/1/${slot}/${onu}/${equip}/1:301
 
+CONSULTAR SE PEGOU MAC
+show vlan bridge-port-fdb 1/1/${slot}/${onu}/${equip}/1
+
+CONSULTAR DETALHES DA ONT
 show equipment ont status pon 1/1/${slot} ont 1/1/${slot}/${onu}
+
+VERIFICAR SE ONT RECEBEU FIRWMARE
+show equipment ont cfg-download 1/1/${slot}/${onu}
+
+REINICIAR A ONT
+admin equipment ont interface 1/1/${slot}/${onu} reboot with-active-image
+
+VERIFICANDO OS PROFILES APLICADOS NA ONT
+info configure qos interface 1/1/{slot}/{onu}/1/1
+info configure qos interface 1/1/{slot}/{onu}/14/1
 
 #################### PROVISIONAR #####################
 
@@ -781,13 +877,83 @@ pvid ${service_port}
 exit all
 
 
+***Caso for dedicado GPON aplicar o seguinte comando para add vlan na card
+
+configure service vpls <service_port> sap lt:1/1/<slot>:<service_port> create no shutdown
+
 ####################### DESPROVISIONAMENTO #######################
 
 configure equipment ont interface 1/1/${slot}/${onu} admin-state down
 configure equipment ont no interface 1/1/${slot}/${onu}
 `;
-    }
-                break;
+   
+
+} else if (rede === "ZHONE_N") {
+    info +=
+`####################### COMANDOS #######################
+
+CONSULTAR EQUIPAMENTO
+show equipment ont index sn:${serial}
+
+DESCOBRIR ONTS DESPROVISIONADAS
+show pon unprovision-onu
+
+LISTAR CARD PON
+show equipment ont status pon 1/1/${slot}
+
+CONSULTAR SINAL DA FIBRA
+show equipment ont optics 1/1/${slot}/${onu}
+
+VERIFICAR SE PEGOU IP
+show dhcp-relay session vlanport:1/1/${slot}/${onu}/${equip}/1:301
+show dhcp-relay session vlanport:1/1/${slot}/${onu}/${equip}/1:299
+
+CONSULTAR SE PEGOU MAC
+show vlan bridge-port-fdb 1/1/${slot}/${onu}/${equip}/1
+
+CONSULTAR DETALHES DA ONT
+show equipment ont status pon 1/1/${slot} ont 1/1/${slot}/${onu}
+
+VERIFICAR SE ONT RECEBEU FIRWMARE
+show equipment ont cfg-download 1/1/${slot}/${onu}
+
+REINICIAR A ONT
+admin equipment ont interface 1/1/${slot}/${onu} reboot with-active-image
+
+VERIFICANDO OS PROFILES APLICADOS NA ONT
+info configure qos interface 1/1/{slot}/{onu}/1/1
+info configure qos interface 1/1/{slot}/{onu}/14/1
+
+#################### PROVISIONAR INTERNET E TV - 301 E 299 #####################
+
+configure equipment ont interface 1/1/${slot}/${onu} sernum ${serial} subslocid WILDCARD fec-up disable sw-dnload-version disabled sw-ver-pland disabled voip-allowed enable
+configure equipment ont interface 1/1/${slot}/${onu} admin-state up
+configure qos interface ont:1/1/${slot}/${onu} ds-queue-sharing
+configure equipment ont slot 1/1/${slot}/${onu}/4 plndnumdataports 1 plndnumvoiceports 0 planned-card-type veip admin-state up
+configure qos interface 1/1/${slot}/${onu}/4/1 upstream-queue 0 bandwidth-profile name:vel_450M_225M_IN
+configure qos interface ont:1/1/${slot}/${onu} queue 0 shaper-profile name:vel_450M_225M_OUT
+configure bridge port 1/1/${slot}/${onu}/4/1 max-unicast-mac 2
+configure bridge port 1/1/${slot}/${onu}/4/1 vlan-id 301 tag single-tagged
+configure interface port uni:1/1/${slot}/${onu}/4/1 admin-up
+configure qos interface 1/1/${slot}/${onu}/4/1 upstream-queue 3 bandwidth-profile name:vel_100M_1M_UP
+configure qos interface ont:1/1/${slot}/${onu} queue 3 shaper-profile name:vel_100M_1M_DOWN
+configure bridge port 1/1/${slot}/${onu}/4/1 vlan-id 299 tag single-tagged
+configure igmp channel vlan:1/1/${slot}/${onu}/4/1:299 max-num-group 10
+
+####################### DESPROVISIONAMENTO #######################
+
+configure equipment ont interface 1/1/${slot}/${onu} admin-state down
+configure equipment ont no interface 1/1/${slot}/${onu}
+
+
+`;
+} // Chave de fechamento do bloco de validação 'rede' anterior
+
+break; //
+
+
+
+      
             case "PARKS":
                 info = `####################### PARKS #######################
 
@@ -805,37 +971,75 @@ show interface gpon${slot} onu status
 
 VERIFICAR ATENUAÇÃO PELO SERIAL
 show gpon onu ${serial} status
+
 `;
 
-if (rede === "ROUTER_prks") {
+if (rede === "ROUTER_prks_azza") {
         info += 
 `####################### PROVISIONAMENTO #######################
 
 configure terminal
 interface gpon${slot}
+
 onu add serial-number ${serial}
 onu ${serial} flow-profile parks411_501
-
 onu ${serial} iphost 1 pppoe username ${service_port} password ${vlan}
 onu ${serial} tr069-profile tr069
 onu ${serial} tr069-admin-state unlock
 
 do copy running-config startup-config
+
+`;}
+
+
+else if (rede === "ROUTER_prks_moc") {
+        info += 
+`####################### PROVISIONAMENTO #######################
+
+configure terminal
+interface gpon${slot}
+ 
+onu add serial-number ${serial}
+onu ${serial} alias ${serial}
+onu ${serial} ethernet-profile auto-on uni-port 1
+onu ${serial} flow-profile PARKS_101_NOVA
+onu ${serial} vlan-translation-profile _222R uni-port 1
+
+`;}
+
+
+else if (rede === "BRIDGE_prks_moc") {
+        info += 
+`####################### PROVISIONAMENTO #######################
+
+configure terminal
+interface gpon${slot}
+
+onu add serial-number ${serial}
+onu ${serial} alias ${serial} 
+onu ${serial} flow-profile PARKS_101_NOVA
+onu ${serial} vlan-translation-profile _222B uni-port 1
+exit
+exit
+
 `;}
 
 else if (rede === "CFTV_prks") {
         info += 
 `####################### PROVISIONAMENTO #######################
 
-conf t
+configure terminal
 interface gpon${slot}
+
 onu add serial-number ${serial}
 onu ${serial} flow-profile cftv_501
 onu ${serial} vlan-translation-profile vt_501 uni-port 1,2,3,4
 do copy running-config startup-config
 end
-`;
-}
+
+`;}
+
+
 
  info += 
 `####################### DESPROVISIONAMENTO #######################
@@ -845,6 +1049,8 @@ interface gpon${slot}
 no onu ${serial}
 end
 `;
+
+
 
 break;
 
