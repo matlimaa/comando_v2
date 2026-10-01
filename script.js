@@ -643,7 +643,7 @@ save
 
 enable  
 config 
-undo service-port port 0/${slot1} ont ${onu}
+undo service-port port 0/${slot} ont ${onu}
 interface gpon 0/${slot1}
 ont delete ${slot2} ${onu}
 quit
