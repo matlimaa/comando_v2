@@ -38,7 +38,7 @@ const opcoesRede = {
     "CALIX": ["813G", "844G-L3"],
     "DATACOM": ["DATACOM"],
     "FURUKAWA": ["ZTE - NOKIA", "HUAWEI ", "FURUKAWA (FIOG)", "FURUKAWA (FISA)"],
-    "HUAWEI": ["HUAWEI_BRIDGE", "HUAWEI_ROUTER"],
+    "HUAWEI": ["HUAWEI_ROUTER", "HUAWEI_BRIDGE", "HUAWEI_WEBBY"],
     "NOKIA": ["ZYXEL", "VANTIVA/NOKIA", "ZHONE_N", "BRIDGE_N" ],
     "PARKS": ["ROUTER_prks_azza", "ROUTER_prks_moc", "BRIDGE_prks_moc", "CFTV_prks"],
     "ZHONE": ["FGA2232", "FGA225C", "ZHONE"],
@@ -48,7 +48,7 @@ const opcoesRede = {
 };
 
 // Redes que devem exibir VLAN e Service Port
-const redesComCampos = ["DATACOM", "HUAWEI_BRIDGE", "HUAWEI_ROUTER", "Brigde", "BRIGDE", "PARKS", "RAMAL", "ROUTER_prks_azza"];
+const redesComCampos = ["DATACOM", "HUAWEI_BRIDGE", "HUAWEI_ROUTER", "HUAWEI_WEBBY", "Brigde", "BRIGDE", "PARKS", "RAMAL", "ROUTER_prks_azza"];
 
 // Atualiza visibilidade e placeholders dos campos
 function atualizarCampos() {
@@ -530,12 +530,12 @@ end
 
 
 
-            case "HUAWEI":
-                info = 
+         case "HUAWEI":
+    info = 
 `####################### COMANDOS HUAWEI #######################
 
 Consultar service port
-display service-port port 0/${slot} ont ${onu}
+display service-port port 0/${slot1} ont ${onu}
 
 consultar ONU desprovisionadas
 display ont autofind all			
@@ -547,7 +547,7 @@ consultar onde a equipamento está provisionamento
 display ont info by-sn ${serial}
 
 Log
-display ont info summary 0/${slot}
+display ont info summary 0/${slot1}
 
 ---------------------
 
@@ -563,37 +563,16 @@ display ont-lineprofile gpon profile-id {id_do_lineprofile}
 
 --------------------------------------------------------------------------
 
-	display ont info by-sn 485754434C098DAA 								
-  		F/S/P: 0/1/22 (Chassi / card [placa] / porta pon)			
-  		ONT-ID: 333	(ID da onu)
+	display ont info by-sn ${serial} 								
+  		F/S/P: 0/${slot1}/${slot2} (Chassi / card [placa] / porta pon)			
+  		ONT-ID: ${onu}	(ID da onu)
 
 --------------------------------------------------------------------------
 `;
 
-    if (rede === "HUAWEI_BRIDGE") {
+    if (rede === "HUAWEI_ROUTER") {
         info += 
-`####################### PROVISIONAMENTO Brigde #######################
-
-enable
-
-config
-
-interface gpon 0/${slot1}
-ont add ${slot2} ${onu} sn-auth ${serial} omci ont-lineprofile-id 1010 ont-srvprofile-id 1010
-
-quit
-display service-port next-free-index
-
-service-port ${vlan} vlan ${service_port} gpon 0/${slot1}/${slot2} ont ${onu} gemport 1 multi-service user-vlan ${service_port} tag-transform translate inbound traffic-table index 50 outbound traffic-table index 50
-
-service-port ${vlan} vlan 501 gpon 0/${slot1}/${slot2} ont ${onu} gemport 4 multi-service user-vlan 501 inbound traffic-table index 50 outbound traffic-table index 50
-
-
-save
-`;
-    } else if (rede === "HUAWEI_ROUTER") {
-        info += 
-`####################### PROVISIONAMENTO #######################
+`####################### PROVISIONAMENTO ROUTER #######################
 
 config
 interface gpon 0/${slot1} 
@@ -610,7 +589,51 @@ quit
 
 display service-port next-free-index
 
-service-port ${service_port} vlan 301 gpon 0/${slot} ont ${onu} gemport 1 multi-service user-vlan 301 tag-transform translate inbound traffic-table index 50 outbound traffic-table index 50
+service-port ${service_port} vlan 301 gpon 0/${slot1} ont ${onu} gemport 1 multi-service user-vlan 301 tag-transform translate inbound traffic-table index 50 outbound traffic-table index 50
+
+`;
+    } else if (rede === "HUAWEI_BRIDGE") {
+        info += 
+`####################### PROVISIONAMENTO BRIDGE #######################
+
+enable
+
+config
+
+interface gpon 0/${slot1}
+ont add ${slot2} ${onu} sn-auth ${serial} omci ont-lineprofile-id 1010 ont-srvprofile-id 1010
+
+quit
+display service-port next-free-index
+
+
+service-port ${vlan} vlan ${service_port} gpon 0/${slot1}/${slot2} ont ${onu} gemport 1 multi-service user-vlan ${service_port} tag-transform translate inbound traffic-table index 50 outbound traffic-table index 50
+
+
+#CFTV
+service-port ${vlan} vlan 501 gpon 0/${slot1}/${slot2} ont ${onu} gemport 4 multi-service user-vlan 501 inbound traffic-table index 50 outbound traffic-table index 50
+
+save
+`;
+    } else if (rede === "HUAWEI_WEBBY") {
+        info += 
+`####################### PROVISIONAMENTO WEBBY #######################
+
+enable
+
+config
+
+interface gpon 0/${slot1}
+ont add ${slot2} ${onu} sn-auth ${serial} omci ont-lineprofile-id ${service_port} ont-srvprofile-id ${service_port} desc ${serial}
+
+ont port native-vlan ${slot2} ${onu} eth 1 vlan ${service_port} priority 0
+quit
+
+display service-port next-free-index
+
+service-port ${vlan} vlan ${service_port} gpon 0/${slot1} ont ${onu} gemport ${service_port} multi-service user-vlan ${service_port} tag-transform translate
+
+save
 `;
     }
 
@@ -620,12 +643,14 @@ service-port ${service_port} vlan 301 gpon 0/${slot} ont ${onu} gemport 1 multi-
 
 enable  
 config 
-undo service-port port 0/${slot} ont ${onu}
+undo service-port port 0/${slot1} ont ${onu}
 interface gpon 0/${slot1}
 ont delete ${slot2} ${onu}
 quit
 
 `;
+    break; // Fim do case "HUAWEI"
+
                 break;
 
 
