@@ -581,9 +581,14 @@ config
 interface gpon 0/${slot1}
 ont add ${slot2} ${onu} sn-auth ${serial} omci ont-lineprofile-id 1010 ont-srvprofile-id 1010
 
+quit
 display service-port next-free-index
 
-service-port ${vlan} vlan ${service_port} gpon 0/${slot1}/${slot2} ont ${onu} gemport 1 multi-service user-vlan 11 tag-transform translate inbound traffic-table index 50 outbound traffic-table index 50
+service-port ${vlan} vlan ${service_port} gpon 0/${slot1}/${slot2} ont ${onu} gemport 1 multi-service user-vlan ${service_port} tag-transform translate inbound traffic-table index 50 outbound traffic-table index 50
+
+service-port ${vlan} vlan 501 gpon 0/${slot1}/${slot2} ont ${onu} gemport 4 multi-service user-vlan 501 inbound traffic-table index 50 outbound traffic-table index 50
+
+
 save
 `;
     } else if (rede === "HUAWEI_ROUTER") {
