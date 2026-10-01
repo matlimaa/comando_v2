@@ -589,7 +589,7 @@ quit
 
 display service-port next-free-index
 
-service-port ${service_port} vlan 301 gpon 0/${slot1} ont ${onu} gemport 1 multi-service user-vlan 301 tag-transform translate inbound traffic-table index 50 outbound traffic-table index 50
+service-port ${service_port} vlan 301 gpon 0/${slot} ont ${onu} gemport 1 multi-service user-vlan 301 tag-transform translate inbound traffic-table index 50 outbound traffic-table index 50
 
 `;
     } else if (rede === "HUAWEI_BRIDGE") {
@@ -631,7 +631,7 @@ quit
 
 display service-port next-free-index
 
-service-port ${vlan} vlan ${service_port} gpon 0/${slot1} ont ${onu} gemport ${service_port} multi-service user-vlan ${service_port} tag-transform translate
+service-port ${vlan} vlan ${service_port} gpon 0/${slot} ont ${onu} gemport ${service_port} multi-service user-vlan ${service_port} tag-transform translate
 
 save
 `;
