@@ -125,10 +125,10 @@ function atualizarCampos() {
             break;
 
         case "RAMAL":
-            labelVlan.textContent = "USERNAME:";
-            inputVlan.placeholder = "USERNAME";
-            labelServicePort.textContent = "PASSWORD:";
-            inputServicePort.placeholder = "PASSWORD";
+            labelVlan.textContent = "PASSWORD:";
+            inputVlan.placeholder = "PASSWORD";
+            labelServicePort.textContent = "USERNAME:";
+            inputServicePort.placeholder = "USERNAME";
             break;
 
         case "ROUTER_prks_azza":
