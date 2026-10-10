@@ -1,3 +1,6 @@
+// ============================================================
+// 1. ELEMENTOS DA INTERFACE E ESTADO INICIAL
+// ============================================================
 const selectProvedor = document.getElementById("provedor");
 const selectRede = document.getElementById("rede");
 const conteudo = document.getElementById("conteudo");
@@ -33,13 +36,16 @@ let desc = "FGA2210";
 
 let opcaoAtiva = "";
 
+// ============================================================
+// 2. CONFIGURAÇÕES DE FABRICANTES, REDES E CAMPOS
+// ============================================================
 // Define opções de rede por provedor
 const opcoesRede = {
     "CALIX": ["813G", "844G-L3"],
     "DATACOM": ["DATACOM"],
     "FURUKAWA": ["ZTE - NOKIA", "HUAWEI ", "FURUKAWA (FIOG)", "FURUKAWA (FISA)"],
     "HUAWEI": ["HUAWEI_ROUTER", "HUAWEI_BRIDGE", "HUAWEI_WEBBY"],
-    "NOKIA": ["ZYXEL", "VANTIVA/NOKIA", "ZHONE_N", "BRIDGE_N" ],
+    "NOKIA": ["ZYXEL", "VANTIVA/NOKIA", "ROUTER AZZA", "ZHONE_N", "BRIDGE_N" ],
     "PARKS": ["ROUTER_prks_azza", "ROUTER_prks_moc", "BRIDGE_prks_moc", "CFTV_prks"],
     "ZHONE": ["FGA2232", "FGA225C", "ZHONE"],
     "ZTE": ["ROUTER", "BRIGDE", "RAMAL"],
@@ -48,8 +54,11 @@ const opcoesRede = {
 };
 
 // Redes que devem exibir VLAN e Service Port
-const redesComCampos = ["DATACOM", "HUAWEI_BRIDGE", "HUAWEI_ROUTER", "HUAWEI_WEBBY", "Brigde", "BRIGDE", "PARKS", "RAMAL", "ROUTER_prks_azza"];
+const redesComCampos = ["DATACOM", "HUAWEI_BRIDGE", "HUAWEI_ROUTER", "HUAWEI_WEBBY", "Brigde", "BRIGDE", "BRIDGE_N", "PARKS", "RAMAL", "ROUTER_prks_azza", "ROUTER AZZA", "ROUTER"];
 
+// ============================================================
+// 3. ATUALIZAÇÃO DOS CAMPOS DINÂMICOS
+// ============================================================
 // Atualiza visibilidade e placeholders dos campos
 function atualizarCampos() {
     const provedor = selectProvedor.value;
@@ -111,17 +120,17 @@ function atualizarCampos() {
     switch (redeSelecionada) {
 
        case "BRIGDE":
-            labelVlan.textContent = "";
+            labelVlan.textContent = "VLAN:";
             inputVlan.placeholder = "VLAN";
-            labelServicePort.textContent = "VLAN:";
-            inputServicePort.placeholder = "VLAN";
+            labelServicePort.style.display = "none";
+            inputServicePort.style.display = "none";
             break;
 
         case "ROUTER":
-            labelVlan.textContent = "VLAN:";
-            inputVlan.placeholder = "VLAN";
-            labelServicePort.textContent = "VLAN:";
-            inputServicePort.placeholder = "VLAN";
+            labelVlan.textContent = "PASSWORD:";
+            inputVlan.placeholder = "PASSWORD";
+            labelServicePort.textContent = "USERNAME:";
+            inputServicePort.placeholder = "USERNAME";
             break;
 
         case "RAMAL":
@@ -137,9 +146,28 @@ function atualizarCampos() {
             labelServicePort.textContent = "PASSWORD:";
             inputServicePort.placeholder = "PASSWORD";
             break;
+
+        case "ROUTER AZZA":
+            labelVlan.textContent = "VLAN:";
+            inputVlan.placeholder = "VLAN";
+            labelServicePort.style.display = "none";
+            inputServicePort.style.display = "none";
+            break;
+
+        case "BRIDGE_N":
+            labelVlan.textContent = "VLAN:";
+            inputVlan.placeholder = "VLAN";
+            labelServicePort.style.display = "none";
+            inputServicePort.style.display = "none";
+            break;
+
+
     }
 }
 
+// ============================================================
+// 4. EVENTOS E LEITURA DOS CAMPOS
+// ============================================================
 // Detecta mudança no provedor
 selectProvedor.addEventListener("change", () => {
     const provedor = selectProvedor.value;
@@ -181,7 +209,21 @@ selectRede.addEventListener("change", () => {
         slot2Formatado = slot2.padStart(2, "0");
         onu = inputOnu.value || "55";
         onuFormatado = onu.padStart(2, "0");
-        serial = inputSerial.value || "DACMECEC5C2EE";
+        serial = inputSerial.value.trim() || "DACMECEC5C2EE";
+        const serialPrefixo = serial.toUpperCase();
+
+        // Define automaticamente a porta da ONT Nokia conforme o prefixo do serial.
+        // ALCL = 14/1, ZYXE = 3/1, ZNTS = 4/1.
+        if (serialPrefixo.startsWith("ALCL")) {
+            equip = 14;
+        } else if (serialPrefixo.startsWith("ZYXE")) {
+            equip = 3;
+        } else if (serialPrefixo.startsWith("ZNTS")) {
+            equip = 4;
+        } else {
+            equip = 3; // Mantém o padrão atual para outros prefixos.
+        }
+
         service_port = inputServicePort.value || "Info_2";
         vlan = inputVlan.value || "Info_1";
         desc = inputDesc.value || "FGA2210";
@@ -190,18 +232,17 @@ selectRede.addEventListener("change", () => {
     });
 });
 
-// Função que atualiza o conteúdo de comandos
-function mostrarInfo() {
-    const provedor = selectProvedor.value;
-    const rede = selectRede.value;
-
+// Função que atualiza o conteúdo de comandos// ============================================================
+// GERAÇÃO DE COMANDOS
+// Cada fabricante possui sua própria função para facilitar a manutenção.
+// Os templates originais foram preservados; a seleção do fabricante
+// agora fica concentrada em um único switch.
+// ============================================================
+/** Gera os comandos do fabricante CALIX. */
+function gerarComandosCalix(dados) {
+    const { rede, slot, slot1, slot2, onu, serial, service_port, vlan, equip, numero, pin, onuFormatado, slot1Formatado, slot2Formatado, desc } = dados;
     let info = "";
 
-    if (provedor && rede) {
-
-  switch (provedor) {
-            case "CALIX":
- 
   info = `####################### COMANDOS #######################
 
 Verificar ont não provisionada:
@@ -241,14 +282,19 @@ delete ont 59${slot1Formatado}${slot2Formatado}${onuFormatado} forced
 ####################### PROVISIONAMENTO #######################
 `;
 
-    if (rede === "813G") {
-        info += `
+    switch (rede) {
+        case '813G':
+            info += `
 create ont 59${slot1Formatado}${slot2Formatado}${onuFormatado} profile 813G serial-number ${serial} admin-state enabled
 `;
-    } else if (rede === "844G-L3") {
-        info += `
+    
+            break;
+        case '844G-L3':
+            info += `
 create ont 59${slot1Formatado}${slot2Formatado}${onuFormatado} profile 844G-L3 serial-number ${serial} admin-state enabled
 `;
+    
+            break;
     }
 
     // Bloco que sempre aparece (independente do perfil escolhido)
@@ -268,9 +314,15 @@ add eth-svc Data3 to-ont-port 59${slot1Formatado}${slot2Formatado}${onuFormatado
 add eth-svc Data2 to-ont-port 59${slot1Formatado}${slot2Formatado}${onuFormatado}/G1 bw-profile IPTV svc-tag-action TA-V-299 mcast-profile IPTV-MCast-Prof-1 admin-state enabled
 
 `;
-                break;
 
-            case "DATACOM":
+    return info;
+}
+
+/** Gera os comandos do fabricante DATACOM. */
+function gerarComandosDatacom(dados) {
+    const { rede, slot, slot1, slot2, onu, serial, service_port, vlan, equip, numero, pin, onuFormatado, slot1Formatado, slot2Formatado, desc } = dados;
+    let info = "";
+
                 info = `##################### COMANDOS DATACOM #####################
 
 ONUS DESPROVISIONADAS
@@ -317,16 +369,23 @@ commit
 
 exit
 `;
-                break;
 
-        case "FURUKAWA":
+    return info;
+}
+
+/** Gera os comandos do fabricante FURUKAWA. */
+function gerarComandosFurukawa(dados) {
+    const { rede, slot, slot1, slot2, onu, serial, service_port, vlan, equip, numero, pin, onuFormatado, slot1Formatado, slot2Formatado, desc } = dados;
+    let info = "";
+
 info = `enable
 show onu info ${slot1}
 
 `;
 
-    if (rede === "ZTE - NOKIA") {
-        info += `####################### ZTE - NOKIA #######################
+    switch (rede) {
+        case 'ZTE - NOKIA':
+            info += `####################### ZTE - NOKIA #######################
 conf t
 gpon
 gpon ${slot1}
@@ -401,8 +460,10 @@ onu-profile ${onu} op_${slot1}-${onu}
 end
 copy running-config startup-config
 `;
-    } else if (rede === "HUAWEI ") {
-        info += `####################### HUAWEI #######################
+    
+            break;
+        case 'HUAWEI ':
+            info += `####################### HUAWEI #######################
 
 conf t
 gpon
@@ -501,16 +562,22 @@ end
 copy running-config startup-config
 
 `;
-    } else if (rede === "FURUKAWA (FIOG)") {
-        info += `####################### INTERNET + VOZ FURUKAWA (FIOG) #######################
+    
+            break;
+        case 'FURUKAWA (FIOG)':
+            info += `####################### INTERNET + VOZ FURUKAWA (FIOG) #######################
 
 
 `;
-   } else if (rede === "FURUKAWA (FISA)") {
-        info += `####################### INTERNET + VOZ FURUKAWA (FISA) #######################
+   
+            break;
+        case 'FURUKAWA (FISA)':
+            info += `####################### INTERNET + VOZ FURUKAWA (FISA) #######################
 
 
 `;
+    
+            break;
     }
 
     // Bloco que sempre aparece (independente do perfil escolhido)
@@ -526,11 +593,14 @@ no traffic-profile tp_${slot1}-${onu}
 end
 `;
 
-     break;
+    return info;
+}
 
+/** Gera os comandos do fabricante HUAWEI. */
+function gerarComandosHuawei(dados) {
+    const { rede, slot, slot1, slot2, onu, serial, service_port, vlan, equip, numero, pin, onuFormatado, slot1Formatado, slot2Formatado, desc } = dados;
+    let info = "";
 
-
-         case "HUAWEI":
     info = 
 `####################### COMANDOS HUAWEI #######################
 
@@ -545,6 +615,10 @@ display ont info 0 ${slot1} ${slot2} all
 
 consultar onde a equipamento está provisionamento
 display ont info by-sn ${serial}
+
+ATIVAR ACESSO REMOTO NA ONT HUAWEI
+diagnose
+ont wan-access http 0/12/8 16 enable
 
 Log
 display ont info summary 0/${slot1}
@@ -570,8 +644,9 @@ display ont-lineprofile gpon profile-id {id_do_lineprofile}
 --------------------------------------------------------------------------
 `;
 
-    if (rede === "HUAWEI_ROUTER") {
-        info += 
+    switch (rede) {
+        case 'HUAWEI_ROUTER':
+            info += 
 `####################### PROVISIONAMENTO ROUTER #######################
 
 config
@@ -592,8 +667,10 @@ display service-port next-free-index
 service-port ${service_port} vlan 301 gpon 0/${slot} ont ${onu} gemport 1 multi-service user-vlan 301 tag-transform translate inbound traffic-table index 50 outbound traffic-table index 50
 
 `;
-    } else if (rede === "HUAWEI_BRIDGE") {
-        info += 
+    
+            break;
+        case 'HUAWEI_BRIDGE':
+            info += 
 `####################### PROVISIONAMENTO BRIDGE #######################
 
 enable
@@ -615,8 +692,10 @@ service-port ${vlan} vlan 501 gpon 0/${slot1}/${slot2} ont ${onu} gemport 4 mult
 
 save
 `;
-    } else if (rede === "HUAWEI_WEBBY") {
-        info += 
+    
+            break;
+        case 'HUAWEI_WEBBY':
+            info += 
 `####################### PROVISIONAMENTO WEBBY #######################
 
 enable
@@ -635,6 +714,8 @@ service-port ${vlan} vlan ${service_port} gpon 0/${slot} ont ${onu} gemport ${se
 
 save
 `;
+    
+            break;
     }
 
     // Bloco que sempre aparece (independente do perfil escolhido)
@@ -649,16 +730,18 @@ ont delete ${slot2} ${onu}
 quit
 
 `;
-    break; // Fim do case "HUAWEI"
 
-                break;
+    return info;
+}
 
+/** Gera os comandos do fabricante NOKIA. */
+function gerarComandosNokia(dados) {
+    const { rede, slot, slot1, slot2, onu, serial, service_port, vlan, equip, numero, pin, onuFormatado, slot1Formatado, slot2Formatado, desc } = dados;
+    let info = "";
 
-            case "NOKIA":
-
-
-    if (rede === "ZYXEL") {
-        info += 
+    switch (rede) {
+        case 'ZYXEL':
+            info += 
 `####################### COMANDOS #######################
 
 CONSULTAR EQUIPAMENTO
@@ -690,22 +773,20 @@ REINICIAR A ONT
 admin equipment ont interface 1/1/${slot}/${onu} reboot with-active-image
 
 VERIFICANDO OS PROFILES APLICADOS NA ONT
-info configure qos interface 1/1/{slot}/{onu}/1/1
-info configure qos interface 1/1/{slot}/{onu}/14/1
+info configure qos interface 1/1/${slot}/${onu}/${equip}/1
 
 ####################### PROVISIONAMENTO Zyxel #######################
 
 configure equipment ont interface 1/1/${slot}/${onu} sernum ${serial} subslocid WILDCARD fec-up disable sw-dnload-version disabled sw-ver-pland disabled voip-allowed iphost iphc-allowed enable
 
-
 configure equipment ont interface 1/1/${slot}/${onu} admin-state up
 configure qos interface ont:1/1/${slot}/${onu} ds-queue-sharing
-configure equipment ont slot 1/1/${slot}/${onu}/3 plndnumdataports 1 plndnumvoiceports 0 planned-card-type veip admin-state up
-configure qos interface 1/1/${slot}/${onu}/3/1 upstream-queue 0 bandwidth-profile name:vel_1000M_1000M_IN
+configure equipment ont slot 1/1/${slot}/${onu}/${equip} plndnumdataports 1 plndnumvoiceports 0 planned-card-type veip admin-state up
+configure qos interface 1/1/${slot}/${onu}/${equip}/1 upstream-queue 0 bandwidth-profile name:vel_1000M_1000M_IN
 configure qos interface ont:1/1/${slot}/${onu} queue 0 shaper-profile name:vel_1000M_1000M_OUT
-configure bridge port 1/1/${slot}/${onu}/3/1 max-unicast-mac 3
-configure bridge port 1/1/${slot}/${onu}/3/1 vlan-id 301 tag single-tagged
-configure interface port uni:1/1/${slot}/${onu}/3/1 admin-up
+configure bridge port 1/1/${slot}/${onu}/${equip}/1 max-unicast-mac 3
+configure bridge port 1/1/${slot}/${onu}/${equip}/1 vlan-id 301 tag single-tagged
+configure interface port uni:1/1/${slot}/${onu}/${equip}/1 admin-up
 
 ###################### DESPROVISIONAMENTO #######################
 
@@ -754,7 +835,231 @@ configure voice ont voice-sip-port 1/1/${slot}/${onu}/2/1 user-aor ${numero} dis
 configure voice ont voice-port 1/1/${slot}/${onu}/2/1 admin-state unlocked
 
 `;
-    } else if (rede === "VANTIVA/NOKIA") {
+    
+            break;
+        case 'VANTIVA/NOKIA':
+            info +=
+`####################### COMANDOS #######################
+
+CONSULTAR EQUIPAMENTO
+show equipment ont index sn:${serial}
+
+DESCOBRIR ONTS DESPROVISIONADAS
+show pon unprovision-onu
+
+LISTAR CARD PON
+show equipment ont status pon 1/1/${slot}
+
+CONSULTAR SINAL DA FIBRA
+show equipment ont optics 1/1/${slot}/${onu}
+
+VERIFICAR SE PEGOU IP
+show dhcp-relay session vlanport:1/1/${slot}/${onu}/${equip}/1:301
+show dhcp-relay session vlanport:1/1/${slot}/${onu}/${equip}/1:299
+
+CONSULTAR SE PEGOU MAC
+show vlan bridge-port-fdb 1/1/${slot}/${onu}/${equip}/1
+
+CONSULTAR DETALHES DA ONT
+show equipment ont status pon 1/1/${slot} ont 1/1/${slot}/${onu}
+
+VERIFICAR SE ONT RECEBEU FIRWMARE
+show equipment ont cfg-download 1/1/${slot}/${onu}
+
+REINICIAR A ONT
+admin equipment ont interface 1/1/${slot}/${onu} reboot with-active-image
+
+VERIFICANDO OS PROFILES APLICADOS NA ONT
+info configure qos interface 1/1/${slot}/${onu}/${equip}/1
+
+
+####################### PROVISIONAMENTO Vantiva/Nokia #######################
+
+configure equipment ont interface 1/1/${slot}/${onu} sernum ${serial} subslocid WILDCARD fec-up disable sw-dnload-version auto sw-ver-pland auto voip-allowed iphost pland-cfgfile1 auto pland-cfgfile2 auto dnload-cfgfile1 auto dnload-cfgfile2 auto desc1 "${desc}"
+
+configure equipment ont interface 1/1/${slot}/${onu} admin-state up
+configure qos interface ont:1/1/${slot}/${onu} ds-queue-sharing
+configure equipment ont slot 1/1/${slot}/${onu}/${equip} plndnumdataports 1 plndnumvoiceports 0 planned-card-type veip admin-state up
+configure qos interface 1/1/${slot}/${onu}/${equip}/1 upstream-queue 0 bandwidth-profile name:vel_1000M_1000M_IN
+configure qos interface ont:1/1/${slot}/${onu} queue 0 shaper-profile name:vel_1000M_1000M_OUT
+configure bridge port 1/1/${slot}/${onu}/${equip}/1 max-unicast-mac 3
+configure bridge port 1/1/${slot}/${onu}/${equip}/1 vlan-id 301 tag single-tagged
+configure interface port uni:1/1/${slot}/${onu}/${equip}/1 admin-up
+
+###################### DESPROVISIONAMENTO #######################
+
+configure equipment ont interface 1/1/${slot}/${onu} admin-state down
+configure equipment ont no interface 1/1/${slot}/${onu}
+
+####################### ATIVAÇÃO TV #######################
+	  ⚠️⚠️⚠️ ENVIAR LINHA POR LINHA ⚠️⚠️⚠️ 
+
+configure qos interface 1/1/${slot}/${onu}/${equip}/1 upstream-queue 3 bandwidth-profile name:vel_100M_1M_UP
+
+configure qos interface ont:1/1/${slot}/${onu} queue 3 shaper-profile name:vel_100M_1M_DOWN
+
+configure bridge port 1/1/${slot}/${onu}/${equip}/1 vlan-id 299 tag single-tagged
+
+configure igmp channel vlan:1/1/${slot}/${onu}/${equip}/1:299 max-num-group 10
+
+####################### COMANDOS TELEFONIA #######################
+
+VERIFICAR SE PEGOU IP
+show dhcp-relay session vlanport:1/1/${slot}/${onu}/vuni:298
+
+VER DADOS DO SERVIDOR SIP
+info configure voice ont voice-sip-port 1/1/${slot}/${onu}/6/1
+
+VER ESTADO FÍSICO DA LINHA
+show voice ont pots operational-data 1/1/${slot}/${onu}/6/1
+
+##################### ATIVAÇÃO TELEFONIA #####################
+
+  ⚠️⚠️⚠️ CASO ERRO, TENTAR ENVIAR LINHA POR LINHA ⚠️⚠️⚠️ 
+
+configure qos interface 1/1/${slot}/${onu}/voip upstream-queue 2 bandwidth-profile name:vel_1M_1M_IN
+configure equipment ont slot 1/1/${slot}/${onu}/2 plndnumdataports 0 plndnumvoiceports 2 planned-card-type pots admin-state down
+configure bridge port 1/1/${slot}/${onu}/vuni max-unicast-mac 2
+configure bridge port 1/1/${slot}/${onu}/vuni vlan-id 298
+configure bridge port 1/1/${slot}/${onu}/vuni pvid 298
+configure iphost ont ont:1/1/${slot}/${onu}/1 dhcp enabled vlan 298
+configure iphost ont ont:1/1/${slot}/${onu}/1 admin-state up
+configure voice ont voip-config ont:1/1/${slot}/${onu}/1 protocol sip
+configure voice ont sip-config ont:1/1/${slot}/${onu}/1 proxyserv-prof 2 aor-host-prt-prof 3 registrar-prof 2 reg-expire-time 1800 uri-format sip-uri
+configure interface port voip:1/1/${slot}/${onu} admin-up
+configure equipment ont slot 1/1/${slot}/${onu}/2 admin-state up
+configure voice ont voice-port 1/1/${slot}/${onu}/2/1 admin-state locked
+configure voice ont voice-port 1/1/${slot}/${onu}/2/1 custinfo POTS1 voipconfig sip pots-pwr-timer 300 rx-gain 1.000000 tx-gain 2.000000 impedance 600 voip-media-prof 1
+configure voice ont voice-sip-port 1/1/${slot}/${onu}/2/1 user-aor ${numero} display-name ${numero} user-name ${numero} password plain:${pin} voice-mail-prof 2 ntwk-dp-prof 1 app-serv-prof 1 ac-code-prof 1
+configure voice ont voice-port 1/1/${slot}/${onu}/2/1 admin-state unlocked
+`;
+    
+            break;
+        case 'ROUTER AZZA':
+            info +=
+`####################### COMANDOS #######################
+
+CONSULTAR EQUIPAMENTO
+show equipment ont index sn:${serial}
+
+DESCOBRIR ONTS DESPROVISIONADAS
+show pon unprovision-onu
+
+LISTAR CARD PON
+show equipment ont status pon 1/1/${slot}
+
+CONSULTAR SINAL DA FIBRA
+show equipment ont optics 1/1/${slot}/${onu}
+
+VERIFICAR SE PEGOU IP
+show dhcp-relay session vlanport:1/1/${slot}/${onu}/${equip}/1:301
+show dhcp-relay session vlanport:1/1/${slot}/${onu}/${equip}/1:299
+
+CONSULTAR SE PEGOU MAC
+show vlan bridge-port-fdb 1/1/${slot}/${onu}/${equip}/1
+
+CONSULTAR DETALHES DA ONT
+show equipment ont status pon 1/1/${slot} ont 1/1/${slot}/${onu}
+
+VERIFICAR SE ONT RECEBEU FIRWMARE
+show equipment ont cfg-download 1/1/${slot}/${onu}
+
+REINICIAR A ONT
+admin equipment ont interface 1/1/${slot}/${onu} reboot with-active-image
+
+VERIFICANDO OS PROFILES APLICADOS NA ONT
+info configure qos interface 1/1/${slot}/${onu}/${equip}/1
+
+####################### PROVISIONAMENTO #######################
+
+configure equipment ont interface 1/1/${slot}/${onu} sw-ver-pland auto desc1 "${serial}" sernum ${serial} pland-cfgfile1 PREALRS003 dnload-cfgfile1 PREALRS003 voip-allowed veip
+ exit all
+configure equipment ont interface 1/1/${slot}/${onu} admin-state up
+ exit all
+configure equipment ont slot 1/1/${slot}/${onu}/1 planned-card-type veip plndnumdataports 1 plndnumvoiceports 0
+ exit all
+configure equipment ont slot 1/1/${slot}/${onu}/1 admin-state up
+ exit all
+configure qos interface 1/1/${slot}/${onu}/1/1 upstream-queue 0 bandwidth-profile name:HSI_1G_UP
+ exit all
+configure qos interface 1/1/${slot}/${onu}/1/1 queue 0 shaper-profile name:HSI_1G_DOWN
+ exit all
+configure interface port uni:1/1/${slot}/${onu}/1/1 admin-up
+ exit all
+configure bridge port 1/1/${slot}/${onu}/1/1 max-unicast-mac 32 max-committed-mac 1
+ exit all
+configure bridge port 1/1/${slot}/${onu}/1/1 vlan-id ${vlan} tag single-tagged
+ exit all
+`;
+            break;
+
+        case 'BRIDGE_N':
+            info += 
+`####################### COMANDOS #######################
+
+CONSULTAR EQUIPAMENTO
+show equipment ont index sn:${serial}
+
+DESCOBRIR ONTS DESPROVISIONADAS
+show pon unprovision-onu
+
+LISTAR CARD PON
+show equipment ont status pon 1/1/${slot}
+
+CONSULTAR SINAL DA FIBRA
+show equipment ont optics 1/1/${slot}/${onu}
+
+CONSULTAR SE PEGOU MAC
+show vlan bridge-port-fdb 1/1/${slot}/${onu}/${equip}/1
+
+CONSULTAR DETALHES DA ONT
+show equipment ont status pon 1/1/${slot} ont 1/1/${slot}/${onu}
+
+VERIFICAR SE ONT RECEBEU FIRWMARE
+show equipment ont cfg-download 1/1/${slot}/${onu}
+
+REINICIAR A ONT
+admin equipment ont interface 1/1/${slot}/${onu} reboot with-active-image
+
+VERIFICANDO OS PROFILES APLICADOS NA ONT
+info configure qos interface 1/1/${slot}/${onu}/${equip}/1
+
+#################### PROVISIONAR #####################
+
+configure equipment ont interface 1/1/${slot}/${onu} sernum ZTEG:D872FE4D sw-ver-pland disabled optics-hist enable
+admin-state up
+exit all
+
+configure equipment ont slot 1/1/${slot}/${onu}/1 planned-card-type ethernet plndnumdataports 1 plndnumvoiceports 0 admin-state up
+exit all
+
+configure qos interface 1/1/${slot}/${onu}/1/1 upstream-queue 0 bandwidth-profile name:HSI_1G_UP
+exit all
+
+configure interface port uni:1/1/${slot}/${onu}/1/1 admin-up
+exit all
+
+configure bridge port 1/1/${slot}/${onu}/1/1 max-unicast-mac 32 max-committed-mac 1
+vlan-id ${service_port}
+exit
+pvid ${service_port}
+exit all
+
+
+***Caso for dedicado GPON aplicar o seguinte comando para add vlan na card
+
+configure service vpls <service_port> sap lt:1/1/<slot>:<service_port> create no shutdown
+
+####################### DESPROVISIONAMENTO #######################
+
+configure equipment ont interface 1/1/${slot}/${onu} admin-state down
+configure equipment ont no interface 1/1/${slot}/${onu}
+`;
+   
+
+
+            break;
+        case 'ZHONE_N':
         info +=
 `####################### COMANDOS #######################
 
@@ -787,188 +1092,23 @@ REINICIAR A ONT
 admin equipment ont interface 1/1/${slot}/${onu} reboot with-active-image
 
 VERIFICANDO OS PROFILES APLICADOS NA ONT
-info configure qos interface 1/1/{slot}/{onu}/1/1
-info configure qos interface 1/1/{slot}/{onu}/14/1
-
-####################### PROVISIONAMENTO Vantiva/Nokia #######################
-
-configure equipment ont interface 1/1/${slot}/${onu} sernum ${serial} subslocid WILDCARD fec-up disable sw-dnload-version auto sw-ver-pland auto voip-allowed iphost pland-cfgfile1 auto pland-cfgfile2 auto dnload-cfgfile1 auto dnload-cfgfile2 auto desc1 "${desc}"
-
-configure equipment ont interface 1/1/${slot}/${onu} admin-state up
-configure qos interface ont:1/1/${slot}/${onu} ds-queue-sharing
-configure equipment ont slot 1/1/${slot}/${onu}/3 plndnumdataports 1 plndnumvoiceports 0 planned-card-type veip admin-state up
-configure qos interface 1/1/${slot}/${onu}/3/1 upstream-queue 0 bandwidth-profile name:vel_1000M_1000M_IN
-configure qos interface ont:1/1/${slot}/${onu} queue 0 shaper-profile name:vel_1000M_1000M_OUT
-configure bridge port 1/1/${slot}/${onu}/3/1 max-unicast-mac 3
-configure bridge port 1/1/${slot}/${onu}/3/1 vlan-id 301 tag single-tagged
-configure interface port uni:1/1/${slot}/${onu}/3/1 admin-up
-
-###################### DESPROVISIONAMENTO #######################
-
-configure equipment ont interface 1/1/${slot}/${onu} admin-state down
-configure equipment ont no interface 1/1/${slot}/${onu}
-
-####################### ATIVAÇÃO TV #######################
-	  ⚠️⚠️⚠️ ENVIAR LINHA POR LINHA ⚠️⚠️⚠️ 
-
-configure qos interface 1/1/${slot}/${onu}/${equip}/1 upstream-queue 3 bandwidth-profile name:vel_100M_1M_UP
-
-configure qos interface ont:1/1/${slot}/${onu} queue 3 shaper-profile name:vel_100M_1M_DOWN
-
-configure bridge port 1/1/${slot}/${onu}/${equip}/1 vlan-id 299 tag single-tagged
-
-configure igmp channel vlan:1/1/${slot}/${onu}/${equip}/1:299 max-num-group 10
-
-####################### COMANDOS TELEFONIA #######################
-
-VERIFICAR SE PEGOU IP
-show dhcp-relay session vlanport:1/1/${slot}/${onu}/vuni:298
-
-VER DADOS DO SERVIDOR SIP
-info configure voice ont voice-sip-port 1/1/${slot}/${onu}/6/1
-
-VER ESTADO FÍSICO DA LINHA
-show voice ont pots operational-data 1/1/${slot}/${onu}/6/1
-
-##################### ATIVAÇÃO TELEFONIA #####################
-
-  ⚠️⚠️⚠️ CASO ERRO, TENTAR ENVIAR LINHA POR LINHA ⚠️⚠️⚠️ 
-
-configure qos interface 1/1/${slot}/${onu}/voip upstream-queue 2 bandwidth-profile name:vel_1M_1M_IN
-configure equipment ont slot 1/1/${slot}/${onu}/2 plndnumdataports 0 plndnumvoiceports 2 planned-card-type pots admin-state down
-configure bridge port 1/1/${slot}/${onu}/vuni max-unicast-mac 2
-configure bridge port 1/1/${slot}/${onu}/vuni vlan-id 298
-configure bridge port 1/1/${slot}/${onu}/vuni pvid 298
-configure iphost ont ont:1/1/${slot}/${onu}/1 dhcp enabled vlan 298
-configure iphost ont ont:1/1/${slot}/${onu}/1 admin-state up
-configure voice ont voip-config ont:1/1/${slot}/${onu}/1 protocol sip
-configure voice ont sip-config ont:1/1/${slot}/${onu}/1 proxyserv-prof 2 aor-host-prt-prof 3 registrar-prof 2 reg-expire-time 1800 uri-format sip-uri
-configure interface port voip:1/1/${slot}/${onu} admin-up
-configure equipment ont slot 1/1/${slot}/${onu}/2 admin-state up
-configure voice ont voice-port 1/1/${slot}/${onu}/2/1 admin-state locked
-configure voice ont voice-port 1/1/${slot}/${onu}/2/1 custinfo POTS1 voipconfig sip pots-pwr-timer 300 rx-gain 1.000000 tx-gain 2.000000 impedance 600 voip-media-prof 1
-configure voice ont voice-sip-port 1/1/${slot}/${onu}/2/1 user-aor ${numero} display-name ${numero} user-name ${numero} password plain:${pin} voice-mail-prof 2 ntwk-dp-prof 1 app-serv-prof 1 ac-code-prof 1
-configure voice ont voice-port 1/1/${slot}/${onu}/2/1 admin-state unlocked
-`;
-    } else if (rede === "BRIDGE_N") {
-        info += 
-`####################### COMANDOS #######################
-
-CONSULTAR EQUIPAMENTO
-show equipment ont index sn:${serial}
-
-DESCOBRIR ONTS DESPROVISIONADAS
-show pon unprovision-onu
-
-LISTAR CARD PON
-show equipment ont status pon 1/1/${slot}
-
-CONSULTAR SINAL DA FIBRA
-show equipment ont optics 1/1/${slot}/${onu}
-
-VERIFICAR SE PEGOU IP
-show dhcp-relay session vlanport:1/1/${slot}/${onu}/${equip}/1:301
-
-CONSULTAR SE PEGOU MAC
-show vlan bridge-port-fdb 1/1/${slot}/${onu}/${equip}/1
-
-CONSULTAR DETALHES DA ONT
-show equipment ont status pon 1/1/${slot} ont 1/1/${slot}/${onu}
-
-VERIFICAR SE ONT RECEBEU FIRWMARE
-show equipment ont cfg-download 1/1/${slot}/${onu}
-
-REINICIAR A ONT
-admin equipment ont interface 1/1/${slot}/${onu} reboot with-active-image
-
-VERIFICANDO OS PROFILES APLICADOS NA ONT
-info configure qos interface 1/1/{slot}/{onu}/1/1
-info configure qos interface 1/1/{slot}/{onu}/14/1
-
-#################### PROVISIONAR #####################
-
-configure equipment ont interface 1/1/${slot}/${onu} sernum ZTEG:D872FE4D sw-ver-pland disabled optics-hist enable
-admin-state up
-exit all
-
-configure equipment ont slot 1/1/${slot}/${onu}/1 planned-card-type ethernet plndnumdataports 1 plndnumvoiceports 0 admin-state up
-exit all
-
-configure qos interface 1/1/${slot}/${onu}/1/1 upstream-queue 0 bandwidth-profile name:HSI_1G_UP
-exit all
-
-configure interface port uni:1/1/${slot}/${onu}/1/1 admin-up
-exit all
-
-configure bridge port 1/1/${slot}/${onu}/1/1 max-unicast-mac 32 max-committed-mac 1
-vlan-id ${service_port}
-exit
-pvid ${service_port}
-exit all
-
-
-***Caso for dedicado GPON aplicar o seguinte comando para add vlan na card
-
-configure service vpls <service_port> sap lt:1/1/<slot>:<service_port> create no shutdown
-
-####################### DESPROVISIONAMENTO #######################
-
-configure equipment ont interface 1/1/${slot}/${onu} admin-state down
-configure equipment ont no interface 1/1/${slot}/${onu}
-`;
-   
-
-} else if (rede === "ZHONE_N") {
-    info +=
-`####################### COMANDOS #######################
-
-CONSULTAR EQUIPAMENTO
-show equipment ont index sn:${serial}
-
-DESCOBRIR ONTS DESPROVISIONADAS
-show pon unprovision-onu
-
-LISTAR CARD PON
-show equipment ont status pon 1/1/${slot}
-
-CONSULTAR SINAL DA FIBRA
-show equipment ont optics 1/1/${slot}/${onu}
-
-VERIFICAR SE PEGOU IP
-show dhcp-relay session vlanport:1/1/${slot}/${onu}/${equip}/1:301
-show dhcp-relay session vlanport:1/1/${slot}/${onu}/${equip}/1:299
-
-CONSULTAR SE PEGOU MAC
-show vlan bridge-port-fdb 1/1/${slot}/${onu}/${equip}/1
-
-CONSULTAR DETALHES DA ONT
-show equipment ont status pon 1/1/${slot} ont 1/1/${slot}/${onu}
-
-VERIFICAR SE ONT RECEBEU FIRWMARE
-show equipment ont cfg-download 1/1/${slot}/${onu}
-
-REINICIAR A ONT
-admin equipment ont interface 1/1/${slot}/${onu} reboot with-active-image
-
-VERIFICANDO OS PROFILES APLICADOS NA ONT
-info configure qos interface 1/1/{slot}/{onu}/1/1
-info configure qos interface 1/1/{slot}/{onu}/14/1
+info configure qos interface 1/1/${slot}/${onu}/${equip}/1
 
 #################### PROVISIONAR INTERNET E TV - 301 E 299 #####################
 
 configure equipment ont interface 1/1/${slot}/${onu} sernum ${serial} subslocid WILDCARD fec-up disable sw-dnload-version disabled sw-ver-pland disabled voip-allowed enable
 configure equipment ont interface 1/1/${slot}/${onu} admin-state up
 configure qos interface ont:1/1/${slot}/${onu} ds-queue-sharing
-configure equipment ont slot 1/1/${slot}/${onu}/4 plndnumdataports 1 plndnumvoiceports 0 planned-card-type veip admin-state up
-configure qos interface 1/1/${slot}/${onu}/4/1 upstream-queue 0 bandwidth-profile name:vel_450M_225M_IN
+configure equipment ont slot 1/1/${slot}/${onu}/${equip} plndnumdataports 1 plndnumvoiceports 0 planned-card-type veip admin-state up
+configure qos interface 1/1/${slot}/${onu}/${equip}/1 upstream-queue 0 bandwidth-profile name:vel_450M_225M_IN
 configure qos interface ont:1/1/${slot}/${onu} queue 0 shaper-profile name:vel_450M_225M_OUT
-configure bridge port 1/1/${slot}/${onu}/4/1 max-unicast-mac 2
-configure bridge port 1/1/${slot}/${onu}/4/1 vlan-id 301 tag single-tagged
-configure interface port uni:1/1/${slot}/${onu}/4/1 admin-up
-configure qos interface 1/1/${slot}/${onu}/4/1 upstream-queue 3 bandwidth-profile name:vel_100M_1M_UP
+configure bridge port 1/1/${slot}/${onu}/${equip}/1 max-unicast-mac 2
+configure bridge port 1/1/${slot}/${onu}/${equip}/1 vlan-id 301 tag single-tagged
+configure interface port uni:1/1/${slot}/${onu}/${equip}/1 admin-up
+configure qos interface 1/1/${slot}/${onu}/${equip}/1 upstream-queue 3 bandwidth-profile name:vel_100M_1M_UP
 configure qos interface ont:1/1/${slot}/${onu} queue 3 shaper-profile name:vel_100M_1M_DOWN
-configure bridge port 1/1/${slot}/${onu}/4/1 vlan-id 299 tag single-tagged
-configure igmp channel vlan:1/1/${slot}/${onu}/4/1:299 max-num-group 10
+configure bridge port 1/1/${slot}/${onu}/${equip}/1 vlan-id 299 tag single-tagged
+configure igmp channel vlan:1/1/${slot}/${onu}/${equip}/1:299 max-num-group 10
 
 ####################### DESPROVISIONAMENTO #######################
 
@@ -977,14 +1117,18 @@ configure equipment ont no interface 1/1/${slot}/${onu}
 
 
 `;
-} // Chave de fechamento do bloco de validação 'rede' anterior
 
-break; //
+            break;
+    } // Chave de fechamento do bloco de validação 'rede' anterior
 
+    return info;
+}
 
+/** Gera os comandos do fabricante PARKS. */
+function gerarComandosParks(dados) {
+    const { rede, slot, slot1, slot2, onu, serial, service_port, vlan, equip, numero, pin, onuFormatado, slot1Formatado, slot2Formatado, desc } = dados;
+    let info = "";
 
-      
-            case "PARKS":
                 info = `####################### PARKS #######################
 
 BUSCAR ONU PELO SERIAL
@@ -1004,8 +1148,9 @@ show gpon onu ${serial} status
 
 `;
 
-if (rede === "ROUTER_prks_azza") {
-        info += 
+switch (rede) {
+        case 'ROUTER_prks_azza':
+            info += 
 `####################### PROVISIONAMENTO #######################
 
 configure terminal
@@ -1019,11 +1164,10 @@ onu ${serial} tr069-admin-state unlock
 
 do copy running-config startup-config
 
-`;}
-
-
-else if (rede === "ROUTER_prks_moc") {
-        info += 
+`;
+            break;
+        case 'ROUTER_prks_moc':
+            info += 
 `####################### PROVISIONAMENTO #######################
 
 configure terminal
@@ -1035,11 +1179,10 @@ onu ${serial} ethernet-profile auto-on uni-port 1
 onu ${serial} flow-profile PARKS_101_NOVA
 onu ${serial} vlan-translation-profile _222R uni-port 1
 
-`;}
-
-
-else if (rede === "BRIDGE_prks_moc") {
-        info += 
+`;
+            break;
+        case 'BRIDGE_prks_moc':
+            info += 
 `####################### PROVISIONAMENTO #######################
 
 configure terminal
@@ -1052,10 +1195,10 @@ onu ${serial} vlan-translation-profile _222B uni-port 1
 exit
 exit
 
-`;}
-
-else if (rede === "CFTV_prks") {
-        info += 
+`;
+            break;
+        case 'CFTV_prks':
+            info += 
 `####################### PROVISIONAMENTO #######################
 
 configure terminal
@@ -1067,7 +1210,9 @@ onu ${serial} vlan-translation-profile vt_501 uni-port 1,2,3,4
 do copy running-config startup-config
 end
 
-`;}
+`;
+            break;
+    }
 
 
 
@@ -1080,14 +1225,14 @@ no onu ${serial}
 end
 `;
 
+    return info;
+}
 
+/** Gera os comandos do fabricante ZHONE. */
+function gerarComandosZhone(dados) {
+    const { rede, slot, slot1, slot2, onu, serial, service_port, vlan, equip, numero, pin, onuFormatado, slot1Formatado, slot2Formatado, desc } = dados;
+    let info = "";
 
-break;
-
-
-
-
-            case "ZHONE":
                 info = `####################### COMANDOS #######################
 
 Listar card/pon
@@ -1118,8 +1263,9 @@ Realizar Reset
 onu reboot 1-${slot1}-${slot2}-${onu}
 `;
 
-    if (rede === "FGA2232") {
-        info += `
+    switch (rede) {
+        case 'FGA2232':
+            info += `
 ####################### PROVISIONAMENTO FGA2232 #######################
 
 onu set ${slot}/${onu} vendorid ZNTS serno fsan ${serial} meprof TECH_FGA2232_R genprof TECH_FGA2232_R
@@ -1166,8 +1312,10 @@ Enter OMCI edit command or [s]ave, [q]uit, [h]elp: s
 
 
 `;
-    } else if (rede === "FGA225C") {
-        info += `
+    
+            break;
+        case 'FGA225C':
+            info += `
 ####################### PROVISIONAMENTO FGA225C #######################
 
 onu set ${slot}/${onu} vendorid ZNTS serno fsan ${serial} meprof VANT_FGA225C_R genprof VANT_FGA225C_R
@@ -1213,8 +1361,10 @@ Enter OMCI edit command or [s]ave, [q]uit, [h]elp: s
 
 
 `;
-    } else if (rede === "ZHONE") {
-        info += `
+    
+            break;
+        case 'ZHONE':
+            info += `
 ####################### PROVISIONAMENTO ZHONE #######################
 
 onu set ${slot}/${onu} vendorid ZNTS serno fsan ${serial} meprof zhone-2428
@@ -1224,6 +1374,8 @@ bridge add 1-${slot1}-${slot2}-${onu}/gpononu gem 3${onuFormatado} gtp 100099100
 bridge add 1-${slot1}-${slot2}-${onu}/gpononu gem 3${onuFormatado} gtp 1000991000 downlink vlan 301 tagged ipktrule 5 epktrule 1000991000 rg-brouted wlan 1 
 bridge add 1-${slot1}-${slot2}-${onu}/gpononu gem 3${onuFormatado} gtp 1000991000 downlink vlan 301 tagged ipktrule 5 epktrule 1000991000 rg-brouted wlan 5
 `;
+    
+            break;
     }
 
     // Bloco que sempre aparece (independente do perfil escolhido)
@@ -1239,14 +1391,15 @@ Are you sure? [yes] or [no]:   yes
 -------
 
 `;
-                break;
 
+    return info;
+}
 
+/** Gera os comandos do fabricante ZTE. */
+function gerarComandosZte(dados) {
+    const { rede, slot, slot1, slot2, onu, serial, service_port, vlan, equip, numero, pin, onuFormatado, slot1Formatado, slot2Formatado, desc } = dados;
+    let info = "";
 
-
-
-
-        case "ZTE":
                 info = `####################### COMANDOS ZTE #######################
 
 Buscar ONU
@@ -1263,8 +1416,9 @@ show gpon onu detail-info gpon_onu-1/${slot}:${onu}
 
 `;
 
-    if (rede === "ROUTER") {
-        info += 
+    switch (rede) {
+        case 'ROUTER':
+            info += 
 `Desprovisionadas 
 show pon onu uncfg
 
@@ -1294,7 +1448,7 @@ mvlan tag eth_0/1 strip
 mvlan tag eth_0/2 strip
 mvlan tag eth_0/3 strip
 mvlan tag eth_0/4 strip
-wan-ip ipv4 mode pppoe username ${service_port} password ${vlan} vlan-profile VP-PPPoE host 1
+wan-ip ipv4 mode pppoe username ${service_port} password ${vlan} vlan-profile VP-PPPoE host 1
 
 ####################### DESPROVISIONAR #######################
 
@@ -1304,8 +1458,10 @@ interface gpon_olt-1/${slot}
 no onu ${onu}
 exit
 `;
-    } else if (rede === "BRIGDE") {
-        info += 
+    
+            break;
+        case 'BRIGDE':
+            info += 
 `Desprovisionadas 
 show pon onu uncfg
 
@@ -1329,11 +1485,11 @@ tcont 1 profile 1G
 gemport 1 tcont 1
 exit
 interface vport-1/${slot}.${onu}:1
-service-port 1 user-vlan ${service_port} vlan ${service_port}
+service-port 1 user-vlan ${vlan} vlan ${vlan}
 exit
 pon-onu-mng gpon_onu-1/${slot}:${onu}
-service 1 gemport 1 vlan ${service_port}
-vlan port eth_0/1 mode tag vlan ${service_port}
+service 1 gemport 1 vlan ${vlan}
+vlan port eth_0/1 mode tag vlan ${vlan}
 exit
 
 ####################### DESPROVISIONAR #######################
@@ -1344,8 +1500,10 @@ interface gpon_olt-1/${slot}
 no onu ${onu}
 exit
 `;
-    } else if (rede === "RAMAL") {
-        info += 
+    
+            break;
+        case 'RAMAL':
+            info += 
 `Confirmar se registrou o ramal
 show gpon remote-onu voip-linestatus gpon_onu-1/1/${slot2}:${onu}
 
@@ -1382,54 +1540,115 @@ pon-onu-mng gpon_onu-1/${slot}:${onu}
 no sip-service pots_0/1
 `;
 
+    
+            break;
     }
-                break;
 
-            case "OUTROS":
-                info = `
-####################### COMANDOS #######################
+    return info;
+}
 
-Validar se rota está operacional
+/** Gera os comandos do fabricante OUTROS. */
+function gerarComandosOutros(dados) {
+    const { rede, slot, slot1, slot2, onu, serial, service_port, vlan, equip, numero, pin, onuFormatado, slot1Formatado, slot2Formatado, desc } = dados;
+    let info = "";
+
+                info = 
+`Validar se rota está operacional
 display interface description | include ${serial}
 
-
-Validar sinal
-HUAWEI
-
-display optical-module extend information interface GigabitEthernet 0/${slot}
-
-display transceiver diagnosis interface XGigabitEthernet 0/${slot}
-
-display transceiver interface XGigabitEthernet 0/${slot} verbose
-
-display interface XGigabitEthernet 0/${slot}
-
+Validar sinal HUAWEI
+display optical-module extend information interface GigabitEthernet ${slot1}/${slot2}/${onu}
+display transceiver diagnosis interface XGigabitEthernet ${slot1}/${slot2}/${onu}
+display transceiver interface XGigabitEthernet ${slot1}/${slot2}/${onu} verbose
+display interface XGigabitEthernet ${slot1}/${slot2}/${onu}
 
 NOKIA
-show port 1/${slot} optical
-
+show port ${slot1}/${slot2}/${onu} optical
 
 JUNIPER
-show interfaces diagnostics optics et-0/${slot} | match laser
-
+show interfaces diagnostics optics et-${slot1}/${slot2}/${onu} | match laser
 
 EXTREME
 show ports 47 transceiver information detail
 
-
 DATACOM
-show hardware-status transceivers detail ${slot}
-
+show hardware-status transceivers detail ${slot1}/${slot2}
 `;
-         break;
 
+    return info;
+}
 
-        }
+// Reúne os valores atuais dos campos em um único objeto.
+function obterDadosComando() {
+    return {
+        rede: selectRede.value,
+        slot,
+        slot1,
+        slot2,
+        onu,
+        serial,
+        service_port,
+        vlan,
+        equip,
+        numero,
+        pin,
+        onuFormatado,
+        slot1Formatado,
+        slot2Formatado,
+        desc
+    };
+}
 
-conteudo.value = info;
-    } else if (provedor) {
-        conteudo.innerHTML = `<h2>${provedor}</h2><p>Selecione a rede para ver os comandos.</p>`;
-    } else {
+// Atualiza o painel com os comandos do fabricante e perfil selecionados.
+function mostrarInfo() {
+    const provedor = selectProvedor.value;
+    const rede = selectRede.value;
+
+    if (!provedor) {
         conteudo.innerHTML = "<h2>Selecione um comando</h2><p>O conteúdo aparecerá aqui quando você escolher provedor e rede.</p>";
+        return;
     }
+
+    if (!rede) {
+        conteudo.innerHTML = `<h2>${provedor}</h2><p>Selecione a rede para ver os comandos.</p>`;
+        return;
+    }
+
+    const dados = obterDadosComando();
+    let info = "";
+
+    switch (provedor) {
+        case "CALIX":
+            info = gerarComandosCalix(dados);
+            break;
+        case "DATACOM":
+            info = gerarComandosDatacom(dados);
+            break;
+        case "FURUKAWA":
+            info = gerarComandosFurukawa(dados);
+            break;
+        case "HUAWEI":
+            info = gerarComandosHuawei(dados);
+            break;
+        case "NOKIA":
+            info = gerarComandosNokia(dados);
+            break;
+        case "PARKS":
+            info = gerarComandosParks(dados);
+            break;
+        case "ZHONE":
+            info = gerarComandosZhone(dados);
+            break;
+        case "ZTE":
+            info = gerarComandosZte(dados);
+            break;
+        case "OUTROS":
+            info = gerarComandosOutros(dados);
+            break;
+        default:
+            conteudo.innerHTML = `<h2>${provedor}</h2><p>Não há comandos cadastrados para este provedor.</p>`;
+            return;
+    }
+
+    conteudo.value = info;
 }
