@@ -756,18 +756,18 @@ show equipment ont status pon 1/1/${slot}
 CONSULTAR SINAL DA FIBRA
 show equipment ont optics 1/1/${slot}/${onu}
 
-VERIFICAR SE PEGOU IP
-show dhcp-relay session vlanport:1/1/${slot}/${onu}/${equip}/1:301
-show dhcp-relay session vlanport:1/1/${slot}/${onu}/${equip}/1:299
-
-CONSULTAR SE PEGOU MAC
-show vlan bridge-port-fdb 1/1/${slot}/${onu}/${equip}/1
-
 CONSULTAR DETALHES DA ONT
 show equipment ont status pon 1/1/${slot} ont 1/1/${slot}/${onu}
 
 VERIFICAR SE ONT RECEBEU FIRWMARE
 show equipment ont cfg-download 1/1/${slot}/${onu}
+
+CONSULTAR SE PEGOU MAC
+show vlan bridge-port-fdb 1/1/${slot}/${onu}/${equip}/1
+
+VERIFICAR SE PEGOU IP
+show dhcp-relay session vlanport:1/1/${slot}/${onu}/${equip}/1:301
+show dhcp-relay session vlanport:1/1/${slot}/${onu}/${equip}/1:299
 
 REINICIAR A ONT
 admin equipment ont interface 1/1/${slot}/${onu} reboot with-active-image
@@ -853,25 +853,24 @@ show equipment ont status pon 1/1/${slot}
 CONSULTAR SINAL DA FIBRA
 show equipment ont optics 1/1/${slot}/${onu}
 
-VERIFICAR SE PEGOU IP
-show dhcp-relay session vlanport:1/1/${slot}/${onu}/${equip}/1:301
-show dhcp-relay session vlanport:1/1/${slot}/${onu}/${equip}/1:299
-
-CONSULTAR SE PEGOU MAC
-show vlan bridge-port-fdb 1/1/${slot}/${onu}/${equip}/1
-
 CONSULTAR DETALHES DA ONT
 show equipment ont status pon 1/1/${slot} ont 1/1/${slot}/${onu}
 
 VERIFICAR SE ONT RECEBEU FIRWMARE
 show equipment ont cfg-download 1/1/${slot}/${onu}
 
+CONSULTAR SE PEGOU MAC
+show vlan bridge-port-fdb 1/1/${slot}/${onu}/${equip}/1
+
+VERIFICAR SE PEGOU IP
+show dhcp-relay session vlanport:1/1/${slot}/${onu}/${equip}/1:301
+show dhcp-relay session vlanport:1/1/${slot}/${onu}/${equip}/1:299
+
 REINICIAR A ONT
 admin equipment ont interface 1/1/${slot}/${onu} reboot with-active-image
 
 VERIFICANDO OS PROFILES APLICADOS NA ONT
 info configure qos interface 1/1/${slot}/${onu}/${equip}/1
-
 
 ####################### PROVISIONAMENTO Vantiva/Nokia #######################
 
@@ -951,18 +950,17 @@ show equipment ont status pon 1/1/${slot}
 CONSULTAR SINAL DA FIBRA
 show equipment ont optics 1/1/${slot}/${onu}
 
-VERIFICAR SE PEGOU IP
-show dhcp-relay session vlanport:1/1/${slot}/${onu}/${equip}/1:301
-show dhcp-relay session vlanport:1/1/${slot}/${onu}/${equip}/1:299
-
-CONSULTAR SE PEGOU MAC
-show vlan bridge-port-fdb 1/1/${slot}/${onu}/${equip}/1
-
 CONSULTAR DETALHES DA ONT
 show equipment ont status pon 1/1/${slot} ont 1/1/${slot}/${onu}
 
 VERIFICAR SE ONT RECEBEU FIRWMARE
 show equipment ont cfg-download 1/1/${slot}/${onu}
+
+CONSULTAR SE PEGOU MAC
+show vlan bridge-port-fdb 1/1/${slot}/${onu}/${equip}/1
+
+VERIFICAR SE PEGOU IP
+show dhcp-relay session vlanport:1/1/${slot}/${onu}/${equip}/1:301
 
 REINICIAR A ONT
 admin equipment ont interface 1/1/${slot}/${onu} reboot with-active-image
@@ -973,23 +971,28 @@ info configure qos interface 1/1/${slot}/${onu}/${equip}/1
 ####################### PROVISIONAMENTO #######################
 
 configure equipment ont interface 1/1/${slot}/${onu} sw-ver-pland auto desc1 "${serial}" sernum ${serial} pland-cfgfile1 PREALRS003 dnload-cfgfile1 PREALRS003 voip-allowed veip
- exit all
+exit all
 configure equipment ont interface 1/1/${slot}/${onu} admin-state up
- exit all
+exit all
 configure equipment ont slot 1/1/${slot}/${onu}/1 planned-card-type veip plndnumdataports 1 plndnumvoiceports 0
- exit all
+exit all
 configure equipment ont slot 1/1/${slot}/${onu}/1 admin-state up
- exit all
+exit all
 configure qos interface 1/1/${slot}/${onu}/1/1 upstream-queue 0 bandwidth-profile name:HSI_1G_UP
- exit all
+exit all
 configure qos interface 1/1/${slot}/${onu}/1/1 queue 0 shaper-profile name:HSI_1G_DOWN
- exit all
+exit all
 configure interface port uni:1/1/${slot}/${onu}/1/1 admin-up
- exit all
+exit all
 configure bridge port 1/1/${slot}/${onu}/1/1 max-unicast-mac 32 max-committed-mac 1
- exit all
+exit all
 configure bridge port 1/1/${slot}/${onu}/1/1 vlan-id ${vlan} tag single-tagged
- exit all
+exit all
+
+###################### DESPROVISIONAMENTO #######################
+
+configure equipment ont interface 1/1/${slot}/${onu} admin-state down
+configure equipment ont no interface 1/1/${slot}/${onu}
 `;
             break;
 
@@ -1000,7 +1003,7 @@ configure bridge port 1/1/${slot}/${onu}/1/1 vlan-id ${vlan} tag single-tagged
 CONSULTAR EQUIPAMENTO
 show equipment ont index sn:${serial}
 
-DESCOBRIR ONTS DESPROVISIONADAS
+ONTS DESPROVISIONADAS
 show pon unprovision-onu
 
 LISTAR CARD PON
@@ -1009,14 +1012,14 @@ show equipment ont status pon 1/1/${slot}
 CONSULTAR SINAL DA FIBRA
 show equipment ont optics 1/1/${slot}/${onu}
 
-CONSULTAR SE PEGOU MAC
-show vlan bridge-port-fdb 1/1/${slot}/${onu}/${equip}/1
-
 CONSULTAR DETALHES DA ONT
 show equipment ont status pon 1/1/${slot} ont 1/1/${slot}/${onu}
 
 VERIFICAR SE ONT RECEBEU FIRWMARE
 show equipment ont cfg-download 1/1/${slot}/${onu}
+
+CONSULTAR SE PEGOU MAC
+show vlan bridge-port-fdb 1/1/${slot}/${onu}/${equip}/1
 
 REINICIAR A ONT
 admin equipment ont interface 1/1/${slot}/${onu} reboot with-active-image
@@ -1026,7 +1029,7 @@ info configure qos interface 1/1/${slot}/${onu}/${equip}/1
 
 #################### PROVISIONAR #####################
 
-configure equipment ont interface 1/1/${slot}/${onu} sernum ZTEG:D872FE4D sw-ver-pland disabled optics-hist enable
+configure equipment ont interface 1/1/${slot}/${onu} sernum ${serial} sw-ver-pland disabled optics-hist enable
 admin-state up
 exit all
 
@@ -1040,9 +1043,9 @@ configure interface port uni:1/1/${slot}/${onu}/1/1 admin-up
 exit all
 
 configure bridge port 1/1/${slot}/${onu}/1/1 max-unicast-mac 32 max-committed-mac 1
-vlan-id ${service_port}
+vlan-id ${vlan}
 exit
-pvid ${service_port}
+pvid ${vlan}
 exit all
 
 
@@ -1573,6 +1576,16 @@ show ports 47 transceiver information detail
 
 DATACOM
 show hardware-status transceivers detail ${slot1}/${slot2}
+_________________________________________________________________________________
+
+PROFILES NOKIA
+show equipment ont sw-version
+
+configure equipment ont interface 1/1/${slot1}/${slot2}/${onu}
+no pland-cfgfile1
+no dnload-cfgfile1
+pland-cfgfile1 PREALRS001
+dnload-cfgfile1 PREALRS001
 `;
 
     return info;
