@@ -618,7 +618,7 @@ display ont info by-sn ${serial}
 
 ATIVAR ACESSO REMOTO NA ONT HUAWEI
 diagnose
-ont wan-access http 0/12/8 16 enable
+ont wan-access http 0/${slot} ${onu} enable
 
 Log
 display ont info summary 0/${slot1}
